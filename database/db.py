@@ -3,7 +3,7 @@ import sqlite3
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()  # Carga variables desde el archivo .env en tu computadora
+load_dotenv() 
 
 DB_PATH = Path("baches.db")
 
@@ -30,7 +30,6 @@ class ConexionPostgres:
         self.conn = psycopg2.connect(url, sslmode="require", cursor_factory=RealDictCursor)
 
     def execute(self, sql, params=()):
-        # Convierte los marcadores '?' de SQLite al formato '%s' de PostgreSQL
         sql_pg = sql.replace("?", "%s")
         cursor = self.conn.cursor()
         cursor.execute(sql_pg, params)
@@ -48,7 +47,6 @@ class ConexionPostgres:
 
 
 def get_connection():
-    """Devuelve conexión a PostgreSQL (Render) si hay URL configurada, o a SQLite local."""
     db_url = _obtener_database_url()
     if db_url:
         return ConexionPostgres(db_url)
@@ -108,6 +106,12 @@ def init_db():
         "CREATE INDEX IF NOT EXISTS idx_prioridad_folio ON historial_prioridad(folio)"
     ]
 
-    with get_connection() as conn:
-        for sql in sentencias:
-            conn.execute(sql)
+    try:
+        with get_connection() as conn:
+            for sql in sentencias:
+                conn.execute(sql)
+    except Exception as error:
+        if "UniqueViolation" in type(error).__name__ or "already exists" in str(error):
+            pass
+        else:
+            raise
