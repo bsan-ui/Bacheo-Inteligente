@@ -135,6 +135,7 @@ if pagina == "Portal ciudadano":
         tipo = st.selectbox("Entorno de la vialidad", ["Calle local", "Avenida", "Cruce", "Cerca de escuela/hospital", "No sé"])
         red_hidraulica = st.checkbox("💧 Hay una coladera, fuga de agua o registro de drenaje junto al bache")
         descripcion = st.text_area("Comentarios adicionales (evita incluir datos personales)", max_chars=600)
+
         with st.expander("📄 Consultar Aviso de Privacidad Simplificado y Manejo de Información"):
             st.markdown("""
             **AVISO DE PRIVACIDAD SIMPLIFICADO (PROTOTIPO ACADÉMICO · CDMX)**
@@ -226,37 +227,39 @@ if pagina == "Portal ciudadano":
                 mostrar_historial(obtener_historial(bache.folio))
             else:
                 st.warning("No encontramos ningún reporte con ese folio. Verifica que esté bien escrito.")
-     with tab_aviso:
-       st.subheader("Acerca de Baches Inteligentes · Xochimilco")
-       st.write(
-         "**Baches Inteligentes** es un Sistema de Apoyo a la Decisión (DSS) diseñado para transformar "
-         "reportes ciudadanos dispersos en rutas de mantenimiento vial priorizadas mediante Ciencia de Datos."
-       )
-    
-       col_info1, col_info2 = st.columns(2)
-       with col_info1:
-         st.markdown("""
-           **1. ¿Cómo se calcula la urgencia (0 a 100)?**
-           Cada variable capturada en escala de 1 a 5 se normaliza al rango $[0, 1]$ y se pondera según su impacto vial:
-           * **Peligro vial:** 35 %
-           * **Profundidad:** 30 %
-           * **Flujo vehicular:** 20 %
-           * **Tamaño superficial:** 15 %
-           * **Factor hidráulico:** +8 puntos adicionales si existe fuga o coladera cercana.
-           * *Regla crítica:* Todo bache con profundidad nivel 5 y peligro $\ge 4$ se clasifica automáticamente como **Emergencia**.
-         """)
-       with col_info2:
-         st.markdown("""
-          **2. Modelado Matemático y Estructuras**
-          * **Cálculo Integral (Regla del Trapecio):** Estima el riesgo acumulado de incidente vial entre las 6:00 y 22:00 h integrando la curva de flujo horario, así como la probabilidad de expansión del daño a 30 días.
-          * **Listas Simplemente Enlazadas:** Organiza las paradas de cada cuadrilla por colonia enlazando cada reporte activo con el siguiente nodo de mayor urgencia.
-          * **Persistencia Relacional:** Base de datos en la nube con auditoría histórica de estados y reevaluaciones.
-          """)
-           
-           st.warning(
-               "**Alcance institucional:** Este desarrollo es un prototipo académico con fines de investigación y docencia; "
-               "no constituye un canal oficial de atención de la Alcaldía Xochimilco ni del Gobierno de la CDMX."
-           )
+
+    with tab_aviso:
+        st.subheader("Acerca de Baches Inteligentes · Xochimilco")
+        st.write(
+            "**Baches Inteligentes** es un Sistema de Apoyo a la Decisión (DSS) diseñado para transformar "
+            "reportes ciudadanos dispersos en rutas de mantenimiento vial priorizadas mediante Ciencia de Datos."
+        )
+
+        col_info1, col_info2 = st.columns(2)
+        with col_info1:
+            st.markdown(r"""
+            **1. ¿Cómo se calcula la urgencia (0 a 100)?**
+            Cada variable capturada en escala de 1 a 5 se normaliza al rango $[0, 1]$ y se pondera según su impacto vial:
+            * **Peligro vial:** 35 %
+            * **Profundidad:** 30 %
+            * **Flujo vehicular:** 20 %
+            * **Tamaño superficial:** 15 %
+            * **Factor hidráulico:** +8 puntos adicionales si existe fuga o coladera cercana.
+            * *Regla crítica:* Todo bache con profundidad nivel 5 y peligro $\ge 4$ se clasifica automáticamente como **Emergencia**.
+            """)
+        with col_info2:
+            st.markdown("""
+            **2. Modelado Matemático y Estructuras**
+            * **Cálculo Integral (Regla del Trapecio):** Estima el riesgo acumulado de incidente vial entre las 6:00 y 22:00 h integrando la curva de flujo horario, así como la probabilidad de expansión del daño a 30 días.
+            * **Listas Simplemente Enlazadas:** Organiza las paradas de cada cuadrilla por colonia enlazando cada reporte activo con el siguiente nodo de mayor urgencia.
+            * **Persistencia Relacional:** Base de datos en la nube con auditoría histórica de estados y reevaluaciones.
+            """)
+
+        st.warning(
+            "**Alcance institucional:** Este desarrollo es un prototipo académico con fines de investigación y docencia; "
+            "no constituye un canal oficial de atención de la Alcaldía Xochimilco ni del Gobierno de la CDMX."
+        )
+
 else:
     if not st.session_state.get("admin_ok", False):
         st.subheader("Acceso para personal operativo y administradores")
