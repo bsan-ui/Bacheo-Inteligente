@@ -337,9 +337,6 @@ else:
                     
                 st.markdown("**Resumen por prioridad y estado**")
                 mostrar_resumen_operativo()
-
-                st.markdown("**Resumen por prioridad y estado**")
-                mostrar_resumen_operativo()
                 st.divider()
 
                 st.markdown("**Listado general de reportes por atender**")
