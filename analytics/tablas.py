@@ -2,12 +2,21 @@ import pandas as pd
 from services.reportes import listar_reportes
 
 COLUMNAS = [
-    "folio", "ubicacion", "zona", "tamano", "profundidad",
-    "riesgo_vial", "trafico", "tipo_via", "fecha_reporte",
-    "puntuacion", "nivel", "estado", "nota_estado"
+    "folio",
+    "ubicacion",
+    "zona",
+    "tamanio",
+    "profundidad",
+    "riesgo_vial",
+    "trafico",
+    "tipo_via",
+    "fecha_reporte",
+    "puntuacion",
+    "nivel",
+    "estado",
+    "nota_estado",
 ]
 
-# Los niveles se ordenan por severidad, no alfabéticamente.
 ORDEN_NIVEL = {
     "Emergencia": 0,
     "Prioridad alta": 1,
@@ -18,11 +27,28 @@ ORDEN_NIVEL = {
 
 
 def _a_dataframe(reportes):
-    """Convierte objetos BacheDB en un DataFrame con columnas consistentes."""
-    df = pd.DataFrame(
-        [{col: getattr(reporte, col) for col in COLUMNAS} for reporte in reportes],
-        columns=COLUMNAS,
-    )
+    """Convierte una lista de objetos en un DataFrame ordenado por severidad."""
+    filas = []
+    for r in reportes:
+        if r is None:
+            continue
+        filas.append({
+            "folio": r.folio,
+            "ubicacion": r.ubicacion,
+            "zona": r.zona,
+            "tamanio": r.tamanio,
+            "profundidad": r.profundidad,
+            "riesgo_vial": r.riesgo_vial,
+            "trafico": r.trafico,
+            "tipo_via": r.tipo_via,
+            "fecha_reporte": r.fecha_reporte,
+            "puntuacion": r.puntuacion,
+            "nivel": r.nivel,
+            "estado": r.estado,
+            "nota_estado": r.nota_estado,
+        })
+
+    df = pd.DataFrame(filas, columns=COLUMNAS)
     if df.empty:
         return df
 
@@ -35,23 +61,29 @@ def _a_dataframe(reportes):
 
 
 def cargar_baches():
-    """DataFrame operativo: reportes que todavía no están reparados."""
-    reportes = [r for r in listar_reportes() if r.estado != "Reparado"]
-    return _a_dataframe(reportes)
+    """Devuelve un DataFrame con los reportes activos (aún no reparados)."""
+    pendientes = []
+    for r in listar_reportes():
+        if r is not None and r.estado != "Reparado":
+            pendientes.append(r)
+    return _a_dataframe(pendientes)
 
 
 def cargar_reparados():
-    """DataFrame separado con reportes reparados; úsese solo en el panel admin."""
-    reportes = [r for r in listar_reportes() if r.estado == "Reparado"]
-    return _a_dataframe(reportes)
+    """Devuelve un DataFrame con los reportes ya marcados como reparados."""
+    reparados = []
+    for r in listar_reportes():
+        if r is not None and r.estado == "Reparado":
+            reparados.append(r)
+    return _a_dataframe(reparados)
 
 
 def resumen_estados():
-    """Resume por nivel y estado únicamente los reportes aún no reparados."""
+    """Agrupa y cuenta los reportes activos por nivel de prioridad y estado."""
     df = cargar_baches()
     if df.empty:
         return pd.DataFrame(columns=["nivel", "estado", "cantidad"])
-    
+
     resumen = (
         df.groupby(["nivel", "estado"])
         .size()
