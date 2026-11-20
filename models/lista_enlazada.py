@@ -1,7 +1,7 @@
 class NodoBache:
     def __init__(self, bache):
-        self.bache = bache          
-        self.siguiente = None   
+        self.bache = bache
+        self.siguiente = None
 
 
 class ListaEnlazadaRuta:
@@ -23,21 +23,27 @@ class ListaEnlazadaRuta:
             actual.siguiente = nuevo_nodo
 
     def obtener_recorrido(self):
-        """Recorre los nodos desde la cabeza hasta None y devuelve las paradas ordenadas."""
+        """Recorre los nodos desde la cabeza hasta el final y devuelve la ruta legible."""
         paradas = []
         actual = self.cabeza
         numero_parada = 1
+
         while actual is not None:
             b = actual.bache
-            siguiente_folio = actual.siguiente.bache.folio if actual.siguiente else "Fin de ruta (None)"
+            if actual.siguiente is not None:
+                siguiente_destino = f"Continúa con {actual.siguiente.bache.folio} ({actual.siguiente.bache.ubicacion})"
+            else:
+                siguiente_destino = "Fin del recorrido"
+
             paradas.append({
-                "Parada": f"#{numero_parada}",
-                "Folio actual": b.folio,
-                "Calle (Ubicación)": b.ubicacion,
+                "Orden": f"Parada {numero_parada}",
+                "Folio": b.folio,
+                "Calle o avenida": b.ubicacion,
                 "Colonia": b.zona,
-                "Prioridad": f"{b.nivel} ({b.puntuacion}/100)",
-                "Siguiente nodo (->)": siguiente_folio
+                "Urgencia": f"{b.nivel} ({b.puntuacion}/100)",
+                "Siguiente parada": siguiente_destino,
             })
             actual = actual.siguiente
             numero_parada += 1
+
         return paradas
