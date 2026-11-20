@@ -29,28 +29,52 @@ def _a_bache_db(fila):
 
 def crear_reporte(datos):
     folio = "B-" + uuid4().hex[:8].upper()
-    bache = evaluar_bache(Bache(folio=folio, **datos))
+    nuevo_bache = Bache(
+        folio=folio,
+        ubicacion=datos["ubicacion"],
+        zona=datos["zona"],
+        tamanio=int(datos["tamanio"]),
+        profundidad=int(datos["profundidad"]),
+        riesgo_vial=int(datos["riesgo_vial"]),
+        trafico=int(datos["trafico"]),
+        tipo_via=datos.get("tipo_via", "No sé"),
+        descripcion=datos.get("descripcion", ""),
+    )
+    bache = evaluar_bache(nuevo_bache)
     fecha = datetime.now(timezone.utc).isoformat()
     nota = "Reporte recibido; pendiente de inspección."
+
     with get_connection() as conn:
         conn.execute(
             """INSERT INTO baches (folio, ubicacion, zona, tamanio, profundidad, riesgo_vial,
             trafico, tipo_via, descripcion, fecha_reporte, puntuacion, nivel, estado, nota_estado)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (bache.folio, bache.ubicacion, bache.zona, bache.tamanio, bache.profundidad,
-             bache.riesgo_vial, bache.trafico, bache.tipo_via, bache.descripcion,
-             bache.fecha_reporte, bache.puntuacion, bache.nivel, bache.estado, nota)
+            (
+                bache.folio,
+                bache.ubicacion,
+                bache.zona,
+                bache.tamanio,
+                bache.profundidad,
+                bache.riesgo_vial,
+                bache.trafico,
+                bache.tipo_via,
+                bache.descripcion,
+                bache.fecha_reporte,
+                bache.puntuacion,
+                bache.nivel,
+                bache.estado,
+                nota,
+            ),
         )
         conn.execute(
             "INSERT INTO historial_prioridad (folio, fecha, puntuacion, nivel, motivo) VALUES (?, ?, ?, ?, ?)",
-            (folio, fecha, bache.puntuacion, bache.nivel, "Evaluación inicial por reglas ilustrativas")
+            (folio, fecha, bache.puntuacion, bache.nivel, "Evaluación inicial por reglas ilustrativas"),
         )
         conn.execute(
             "INSERT INTO seguimiento (folio, fecha, estado, nota, operador) VALUES (?, ?, ?, ?, ?)",
-            (folio, fecha, bache.estado, "Reporte creado", "sistema-demo")
+            (folio, fecha, bache.estado, "Reporte creado", "sistema-demo"),
         )
     return folio
-
 
 def consultar_reporte(folio):
     with get_connection() as conn:
