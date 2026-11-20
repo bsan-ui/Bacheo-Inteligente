@@ -305,7 +305,8 @@ else:
                 col_m2.metric("Casos en Emergencia", int((df["nivel"] == "Emergencia").sum()))
                 col_m3.metric("Urgencia promedio", f"{df['puntuacion'].mean():.1f}/100")
 
-                col_g1, col_g2 = st.columns(2)
+               col_g1, col_g2 = st.columns(2)
+
                 with col_g1:
                     st.markdown("**Distribución por colonia y prioridad**")
                     tabla_cruzada = pd.crosstab(df["zona"], df["nivel"])
@@ -317,34 +318,23 @@ else:
                     }
                     colores = [mapa_colores.get(col, "#757575") for col in tabla_cruzada.columns]
                     st.bar_chart(tabla_cruzada, color=colores)
+
                 with col_g2:
-                    st.markdown("**Distribución por nivel de prioridad**")
-                    st.bar_chart(df["nivel"].value_counts())
-
-                col_g1, col_g2 = st.columns(2)
-                with col_g1:
-                    st.markdown("**Distribución por colonia**")
-                    st.bar_chart(df["zona"].value_counts())
-                with col_g2:
-                    st.markdown("**Distribución por nivel de prioridad**")
-                    st.bar_chart(df["nivel"].value_counts())
-
-                st.markdown("**Relación entre profundidad e índice de urgencia**")
-                st.caption("Cada punto representa un bache activo; el color indica la prioridad y el tamaño del círculo corresponde al tamaño del bache.")
-                df_dispersion = df[["profundidad", "puntuacion", "nivel", "tamanio"]].rename(columns={
-                    "profundidad": "Profundidad (1–5)",
-                    "puntuacion": "Urgencia (0–100)",
-                    "nivel": "Nivel de prioridad",
-                    "tamanio": "Tamaño (1–5)",
-                })
-                st.scatter_chart(
-                    df_dispersion,
-                    x="Profundidad (1–5)",
-                    y="Urgencia (0–100)",
-                    color="Nivel de prioridad",
-                    size="Tamaño (1–5)",
-                )
-
+                    st.markdown("**Relación entre profundidad e índice de urgencia**")
+                    df_dispersion = df[["profundidad", "puntuacion", "nivel", "tamanio"]].rename(columns={
+                        "profundidad": "Profundidad (1–5)",
+                        "puntuacion": "Urgencia (0–100)",
+                        "nivel": "Nivel de prioridad",
+                        "tamanio": "Tamaño (1–5)",
+                    })
+                    st.scatter_chart(
+                        df_dispersion,
+                        x="Profundidad (1–5)",
+                        y="Urgencia (0–100)",
+                        color="Nivel de prioridad",
+                        size="Tamaño (1–5)",
+                    )
+                    
                 st.markdown("**Resumen por prioridad y estado**")
                 mostrar_resumen_operativo()
 
