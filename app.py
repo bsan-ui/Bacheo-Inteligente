@@ -403,9 +403,15 @@ else:
                 mostrar_historial(obtener_historial(folio_reparado))
                 st.subheader("Historial de ajustes de urgencia")
                 mostrar_historial_prioridad(obtener_historial_prioridad(folio_reparado))
-
-st.divider()
-st.caption(
-    "© 2026 · Desarrollado por Martinez Ventura Andrea, Gonzalez Manriquez Jose Fernando y Sanchez Flores Brandon · "
-    "Proyecto Académico de Ciencia de Datos (CDMX) · Código bajo Licencia MIT para fines educativos."
+                
+st.markdown("---")
+st.markdown(
+    "<div style='text-align: center; color: #888888; font-size: 0.85em; padding-top: 20px;'>"
+    "© 2026 Proyecto Académico de Ciencia de Datos (CDMX). — Bacheo inteligente<br>"
+    "Licenciatura en ciencia de datos para negocios | Universidad Nacional Rosario Castellanos<br>"
+    "Unidad académica Magdalena Contreras<br><br>"
+    "<b>Autores:</b> Martinez Ventura Andrea, Gonzalez Manriquez Jose Fernando, "
+    "Sánchez Flores Brandon."
+    "</div>",
+    unsafe_allow_html=True
 )
