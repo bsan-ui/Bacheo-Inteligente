@@ -83,8 +83,14 @@ def mostrar_resumen_operativo():
 
 
 st.set_page_config(page_title="Baches Inteligentes — Xochimilco", page_icon="🕳️", layout="wide")
-init_db()
-seed_demo()
+@st.cache_resource
+def inicializar_sistema():
+    init_db()
+    seed_demo()
+    return True
+
+
+inicializar_sistema()
 
 st.title("🕳️ Baches Inteligentes · Alcaldía Xochimilco")
 st.caption("Prototipo académico · Demarcación territorial: Xochimilco, CDMX")
