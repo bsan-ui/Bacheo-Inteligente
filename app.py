@@ -306,7 +306,7 @@ else:
                 col_m3.metric("Urgencia promedio", f"{df['puntuacion'].mean():.1f}/100")
 
                 col_g1, col_g2 = st.columns(2)
-               with col_g1:
+                with col_g1:
                     st.markdown("**Distribución por colonia y prioridad**")
                     tabla_cruzada = pd.crosstab(df["zona"], df["nivel"])
                     mapa_colores = {
