@@ -135,7 +135,19 @@ if pagina == "Portal ciudadano":
         tipo = st.selectbox("Entorno de la vialidad", ["Calle local", "Avenida", "Cruce", "Cerca de escuela/hospital", "No sé"])
         red_hidraulica = st.checkbox("💧 Hay una coladera, fuga de agua o registro de drenaje junto al bache")
         descripcion = st.text_area("Comentarios adicionales (evita incluir datos personales)", max_chars=600)
-        confirmar_aviso = st.checkbox("Confirmo que la información proporcionada no contiene datos personales.")
+        with st.expander("📄 Consultar Aviso de Privacidad Simplificado y Manejo de Información"):
+            st.markdown("""
+            **AVISO DE PRIVACIDAD SIMPLIFICADO (PROTOTIPO ACADÉMICO · CDMX)**
+
+            * **Responsables del tratamiento:** Equipo de investigación estudiantil del proyecto *"Baches Inteligentes — Alcaldía Xochimilco"* (Licenciatura en Ciencia de Datos, Ciudad de México).
+            * **Datos recabados:** Exclusivamente información técnica y geográfica de infraestructura vial pública (colonia, calle o avenida, dimensiones estimadas del daño, flujo vehicular y presencia de red hidráulica). **Este sistema no recaba ni requiere datos personales identificables** (nombres, teléfonos, correos, placas o domicilios particulares), en apego al principio de minimización de datos de la legislación vigente en la Ciudad de México.
+            * **Finalidad:** Los registros se utilizan únicamente con fines académicos, estadísticos, de modelado matemático y de demostración tecnológica en entorno universitario. No se transfieren a terceros ni tienen fines comerciales.
+            * **Control y seguimiento:** Cada reporte genera un folio alfanumérico anónimo (`B-XXXXXXXX`) que permite consultar su estado o solicitar su baja de la base de demostración ante los autores del proyecto.
+            """)
+
+        confirmar_aviso = st.checkbox(
+            "He leído el Aviso de Privacidad, comprendo el manejo académico de los datos y confirmo que mi reporte solo contiene información vial."
+        )
 
         duplicados = buscar_duplicados(zona, calle_seleccionada, tamanio, profundidad)
         forzar_registro = False
@@ -215,14 +227,37 @@ if pagina == "Portal ciudadano":
             else:
                 st.warning("No encontramos ningún reporte con ese folio. Verifica que esté bien escrito.")
 
-    with tab_aviso:
-        st.subheader("Sobre esta plataforma")
+  with tab_aviso:
+        st.subheader("Acerca de Baches Inteligentes · Xochimilco")
         st.write(
-            "Este sistema permite registrar, clasificar y dar seguimiento transparente a los reportes de baches "
-            "en la Alcaldía Xochimilco, priorizando aquellos puntos que representan mayor peligro para la movilidad."
+            "**Baches Inteligentes** es un Sistema de Apoyo a la Decisión (DSS) diseñado para transformar "
+            "reportes ciudadanos dispersos en rutas de mantenimiento vial priorizadas mediante Ciencia de Datos."
         )
-        st.info("Prototipo académico desarrollado con fines demostrativos. Por seguridad, no ingreses datos personales reales.")
 
+        col_info1, col_info2 = st.columns(2)
+        with col_info1:
+            st.markdown("""
+            **1. ¿Cómo se calcula la urgencia (0 a 100)?**
+            Cada variable capturada en escala de 1 a 5 se normaliza al rango $[0, 1]$ y se pondera según su impacto vial:
+            * **Peligro vial:** 35 %
+            * **Profundidad:** 30 %
+            * **Flujo vehicular:** 20 %
+            * **Tamaño superficial:** 15 %
+            * **Factor hidráulico:** +8 puntos adicionales si existe fuga o coladera cercana.
+            * *Regla crítica:* Todo bache con profundidad nivel 5 y peligro $\ge 4$ se clasifica automáticamente como **Emergencia**.
+            """)
+        with col_info2:
+            st.markdown("""
+            **2. Modelado Matemático y Estructuras**
+            * **Cálculo Integral (Regla del Trapecio):** Estima el riesgo acumulado de incidente vial entre las 6:00 y 22:00 h integrando la curva de flujo horario, así como la probabilidad de expansión del daño a 30 días.
+            * **Listas Simplemente Enlazadas:** Organiza las paradas de cada cuadrilla por colonia enlazando cada reporte activo con el siguiente nodo de mayor urgencia.
+            * **Persistencia Relacional:** Base de datos en la nube con auditoría histórica de estados y reevaluaciones.
+            """)
+
+        st.warning(
+            "**Alcance institucional:** Este desarrollo es un prototipo académico con fines de investigación y docencia; "
+            "no constituye un canal oficial de atención de la Alcaldía Xochimilco ni del Gobierno de la CDMX."
+        )
 else:
     if not st.session_state.get("admin_ok", False):
         st.subheader("Acceso para personal operativo y administradores")
@@ -366,3 +401,9 @@ else:
                 mostrar_historial(obtener_historial(folio_reparado))
                 st.subheader("Historial de ajustes de urgencia")
                 mostrar_historial_prioridad(obtener_historial_prioridad(folio_reparado))
+
+st.divider()
+st.caption(
+    "© 2026 · Desarrollado por Martinez Ventura Andrea, Gonzalez Manriquez Jose Fernando y Sanchez Flores Brandon · "
+    "Proyecto Académico de Ciencia de Datos (CDMX) · Código bajo Licencia MIT para fines educativos."
+)
