@@ -16,7 +16,7 @@ def evaluar_bache(bache):
     )
 
     
-    if "[Red hidráulica/drenaje]" in bache.descripcion:
+    if "[Red hidráulica/drenaje]" in (bache.descripcion or ""):
         score = min(100.0, score + 8.0)
 
     bache.puntuacion = round(score, 2)
