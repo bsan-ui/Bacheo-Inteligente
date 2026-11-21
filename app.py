@@ -1,3 +1,4 @@
+import altair as alt
 import streamlit as st
 import pandas as pd
 from database.db import init_db
@@ -351,19 +352,67 @@ else:
 
                 with col_g2:
                     st.markdown("**Relación entre profundidad e índice de urgencia**")
-                    df_dispersion = df[["profundidad", "puntuacion", "nivel", "tamanio"]].rename(columns={
-                        "profundidad": "Profundidad (1–5)",
-                        "puntuacion": "Urgencia (0–100)",
-                        "nivel": "Nivel de prioridad",
-                        "tamanio": "Tamaño (1–5)",
-                    })
-                    st.scatter_chart(
-                        df_dispersion,
-                        x="Profundidad (1–5)",
-                        y="Urgencia (0–100)",
-                        color="Nivel de prioridad",
-                        size="Tamaño (1–5)",
+                    df_dispersion = df[["profundidad", "puntuacion", "nivel", "tamanio"]].rename(
+                        columns={
+                            "profundidad": "Profundidad (1–5)",
+                            "puntuacion": "Urgencia (0–100)",
+                            "nivel": "Nivel de prioridad",
+                            "tamanio": "Tamaño (1–5)",
+                        }
                     )
+                
+                    niveles_orden = [
+                        "Emergencia",
+                        "Prioridad alta",
+                        "Prioridad media",
+                        "Prioridad baja",
+                        "En revisión",
+                    ]
+                    colores_fijos = [
+                        "#E53935",
+                        "#FB8C00",
+                        "#FDD835",
+                        "#1E88E5",
+                        "#757575",
+                    ]
+                
+                    escala_color = alt.Scale(domain=niveles_orden, range=colores_fijos)
+                
+                    dispersion_chart = (
+                        alt.Chart(df_dispersion)
+                        .mark_circle(opacity=0.88, stroke="#1d1b16", strokeWidth=0.6)
+                        .encode(
+                            x=alt.X(
+                                "Profundidad (1–5):Q",
+                                scale=alt.Scale(domain=[0.5, 5.5]),
+                                title="Profundidad (1–5)",
+                            ),
+                            y=alt.Y(
+                                "Urgencia (0–100):Q",
+                                scale=alt.Scale(domain=[0, 105]),
+                                title="Urgencia (0–100)",
+                            ),
+                            color=alt.Color(
+                                "Nivel de prioridad:N",
+                                scale=escala_color,
+                                legend=alt.Legend(title="Nivel de prioridad"),
+                            ),
+                            size=alt.Size(
+                                "Tamaño (1–5):Q",
+                                scale=alt.Scale(range=[80, 420]),
+                                legend=alt.Legend(title="Tamaño (1–5)"),
+                            ),
+                            tooltip=[
+                                "Nivel de prioridad:N",
+                                "Profundidad (1–5):Q",
+                                "Urgencia (0–100):Q",
+                                "Tamaño (1–5):Q",
+                            ],
+                        )
+                        .interactive()
+                    )
+                
+                    st.altair_chart(dispersion_chart, use_container_width=True)
 
                 st.markdown("**Resumen por prioridad y estado**")
                 mostrar_resumen_operativo()
