@@ -77,16 +77,26 @@ def crear_reporte(datos):
     return folio
 
 def consultar_reporte(folio):
+    if not folio or not folio.strip():
+        return None
     with get_connection() as conn:
-        fila = conn.execute("SELECT * FROM baches WHERE folio = ?", (folio.strip().upper(),)).fetchone()
+        fila = conn.execute(
+            "SELECT * FROM baches WHERE folio = ?",
+            (folio.strip().upper(),)
+        ).fetchone()
     return _a_bache_db(fila)
 
 
 def listar_reportes():
     with get_connection() as conn:
-        filas = conn.execute("SELECT * FROM baches ORDER BY puntuacion DESC, fecha_reporte ASC").fetchall()
+        filas = conn.execute(
+            """SELECT * FROM baches
+               ORDER BY
+                   CASE WHEN nivel = 'Emergencia' THEN 1 ELSE 0 END DESC,
+                   puntuacion DESC,
+                   fecha_reporte ASC"""
+        ).fetchall()
     return [_a_bache_db(fila) for fila in filas]
-
 
 def actualizar_variables_revision(folio, variables, nota, usuario):
     campos_validos = {"tamanio", "profundidad", "riesgo_vial", "trafico"}
@@ -212,14 +222,17 @@ COLONIAS_XOCHIMILCO = {
 
 def buscar_duplicados(zona, ubicacion, tamanio, profundidad):
     """
-    Busca reportes activos en la misma colonia y calle con tamaño o profundidad
-    idénticos o muy cercanos (diferencia máxima de 1 punto).
+    Busca reportes activos en la misma colonia y calle (con o sin referencia
+    entre paréntesis) con tamaño y profundidad idénticos o muy cercanos
+    (diferencia máxima de 1 punto).
     """
     with get_connection() as conn:
         filas = conn.execute(
             """SELECT * FROM baches
-               WHERE zona = ? AND ubicacion = ? AND estado != 'Reparado'""",
-            (zona, ubicacion)
+               WHERE zona = ?
+                 AND (ubicacion = ? OR ubicacion LIKE ?)
+                 AND estado != 'Reparado'""",
+            (zona, ubicacion, f"{ubicacion} (%")
         ).fetchall()
 
     coincidencias = []
