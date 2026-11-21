@@ -181,44 +181,38 @@ def obtener_historial_prioridad(folio):
     return lista_prioridades
 
 COLONIAS_XOCHIMILCO = {
-    "Barrio San Pedro": [
-        "Av. Guadalupe I. Ramírez",
-        "Calle Pedro Ramírez del Castillo",
-        "Prolongación División del Norte",
-        "Calle Vicente Guerrero"
-    ],
-    "Barrio Xaltocan": [
+    "Santa María Tepepan": [
         "Av. 16 de Septiembre",
-        "Calle Pino",
-        "Calle Violeta",
-        "Cerrada Xaltocan"
+        "Calle Cuauhtémoc",
+        "Calle Ignacio Aldama",
+        "Calle 5 de Mayo",
+        "Calle Nicolás Bravo",
+        "Calle Galeana",
+        "Calle Miguel Hidalgo",
+        "Calle Mariano Abasolo",
+        "Calz. Guadalupe I. Ramírez",
+        "Otra calle (indicar en referencia)"
     ],
-    "Santa Cruz Acalpixca": [
-        "Av. Tenochtitlán",
-        "Carretera Xochimilco-Tulyehualco",
+    "Bosque Residencial del Sur": [
+        "Calle Rincón Sur",
+        "Calle Rincón de las Flores",
+        "Calle Rincón del Pozo",
+        "Calle Rincón de los Ángeles",
+        "Calle Rincón de la Hacienda",
+        "Calle Rincón del Río",
+        "Otra calle (indicar en referencia)"
+    ],
+    "San Juan Tepepan": [
+        "Calz. Guadalupe I. Ramírez",
+        "Calle Emiliano Zapata",
+        "Calle Ignacio Zaragoza",
+        "Calle 5 de Febrero",
+        "Calle Felipe Ángeles",
         "Calle Lázaro Cárdenas",
-        "Calle 20 de Noviembre"
-    ],
-    "San Gregorio Atlapulco": [
-        "Av. Chapultepec",
-        "Av. México",
-        "Calle Insurgentes",
-        "Calle Belisario Domínguez"
-    ],
-    "Santiago Tulyehualco": [
-        "Av. Tláhuac-Tulyehualco",
-        "Calle Francisco I. Madero",
-        "Av. Aquiles Serdán",
-        "Calle Josefa Ortiz de Domínguez"
-    ],
-    "Ampliación Tepepan / La Noria": [
-        "Av. México (La Noria)",
-        "Antiguo Camino a Xochimilco",
-        "Calle Camino Real a Xochimilco",
-        "Calle Galeana"
+        "Privada San Lorenzo",
+        "Otra calle (indicar en referencia)"
     ]
 }
-
 
 def buscar_duplicados(zona, ubicacion, tamanio, profundidad):
     """
