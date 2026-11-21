@@ -11,6 +11,16 @@ from services.reportes import (
     buscar_duplicados,
     COLONIAS_XOCHIMILCO,
 )
+from services.mediciones import (
+    CRITERIOS_PELIGRO,
+    VALORES_REFERENCIA_TAMANIO,
+    VALORES_REFERENCIA_PROFUNDIDAD,
+    VALORES_REFERENCIA_TRAFICO,
+    clasificar_tamanio,
+    clasificar_profundidad,
+    clasificar_trafico,
+    calcular_material_y_costo,
+)
 from services.seguimiento import actualizar_estado, obtener_historial, ESTADOS_VALIDOS
 from analytics.tablas import cargar_baches, cargar_reparados, resumen_estados
 from analytics.prediccion import (
@@ -126,12 +136,32 @@ if pagina == "Portal ciudadano":
             placeholder="Ej. Frente a la escuela, esquina con cerrada o junto al puente"
         )
 
-        st.markdown("**Evalúa las condiciones del bache (1 = leve, 5 = crítico)**")
+        st.markdown("**Evalúa las condiciones aproximadas del bache (1 = leve, 5 = crítico)**")
+        with st.expander("📏 Guía rápida para estimar del 1 al 5"):
+            st.markdown("""
+            * **Tamaño:** 1 = hoja carta / plato (< 0.15 m²) · 2 = mochila (0.15–0.50 m²) · 3 = medio carril (0.51–1.20 m²) · 4 = casi un carril (1.21–2.50 m²) · 5 = tramo colapsado (> 2.50 m²).
+            * **Profundidad:** 1 = desgaste superficial (< 3 cm) · 2 = alto de celular (3–5 cm) · 3 = alto de un puño (5–10 cm) · 4 = alto de un ladrillo (10–20 cm) · 5 = posible socavón (> 20 cm).
+            * **Flujo vehicular:** 1 = cerrada vecinal (< 2 autos/min) · 2 = calle tranquila (2–5/min) · 3 = calle regular (6–15/min) · 4 = avenida con transporte (16–30/min) · 5 = vía principal saturada (> 30/min).
+            * **Peligro vial:** 1 = en orilla, fácil de esquivar · 3 = obliga a frenar o invadir carril · 5 = hundimiento inevitable en vía rápida o ciclovía.
+            """)
+
         col1, col2 = st.columns(2)
-        tamanio = col1.slider("Tamaño aproximado", 1, 5, 3, help="1: pequeño · 5: abarca gran parte del carril")
-        profundidad = col2.slider("Profundidad", 1, 5, 3, help="1: desgaste superficial · 5: hundimiento profundo o socavón")
-        riesgo = col1.slider("Peligro para vehículos y peatones", 1, 5, 3, help="1: fácil de esquivar · 5: alto riesgo de accidente o daño mecánico")
-        trafico = col2.slider("Flujo vehicular en la zona", 1, 5, 3, help="1: calle poco transitada · 5: avenida principal con tráfico constante")
+        tamanio = col1.slider(
+            "Tamaño aproximado", 1, 5, 3,
+            help="1: plato (<0.15 m²) · 2: mochila · 3: medio carril · 4: casi todo el carril · 5: tramo colapsado (>2.5 m²)"
+        )
+        profundidad = col2.slider(
+            "Profundidad aproximada", 1, 5, 3,
+            help="1: <3 cm · 2: 3–5 cm (un celular) · 3: 5–10 cm (un puño) · 4: 10–20 cm (un ladrillo) · 5: >20 cm (socavón)"
+        )
+        riesgo = col1.slider(
+            "Peligro para vehículos y peatones", 1, 5, 3,
+            help="1: en orilla y lento · 2: esquivable · 3: obliga a frenar · 4: vía rápida, curva o charco · 5: riesgo grave inevitable"
+        )
+        trafico = col2.slider(
+            "Flujo vehicular en la zona", 1, 5, 3,
+            help="1: <2 autos/min · 2: 2–5/min · 3: 6–15/min · 4: 16–30/min · 5: >30 autos/min"
+        )
 
         tipo = st.selectbox("Entorno de la vialidad", ["Calle local", "Avenida", "Cruce", "Cerca de escuela/hospital", "No sé"])
         red_hidraulica = st.checkbox("💧 Hay una coladera, fuga de agua o registro de drenaje junto al bache")
@@ -253,6 +283,7 @@ if pagina == "Portal ciudadano":
             **2. Modelado Matemático y Estructuras**
             * **Cálculo Integral (Regla del Trapecio):** Estima el riesgo acumulado de incidente vial entre las 6:00 y 22:00 h integrando la curva de flujo horario, así como la probabilidad de expansión del daño a 30 días.
             * **Listas Simplemente Enlazadas:** Organiza las paradas de cada cuadrilla por colonia enlazando cada reporte activo con el siguiente nodo de mayor urgencia.
+            * **Inspección Técnica y Material:** En campo, el personal captura medidas reales en centímetros para calcular mezcla asfáltica y costo estimado.
             * **Persistencia Relacional:** Base de datos en la nube con auditoría histórica de estados y reevaluaciones.
             """)
 
@@ -306,7 +337,6 @@ else:
                 col_m3.metric("Urgencia promedio", f"{df['puntuacion'].mean():.1f}/100")
 
                 col_g1, col_g2 = st.columns(2)
-
                 with col_g1:
                     st.markdown("**Distribución por colonia y prioridad**")
                     tabla_cruzada = pd.crosstab(df["zona"], df["nivel"])
@@ -334,7 +364,7 @@ else:
                         color="Nivel de prioridad",
                         size="Tamaño (1–5)",
                     )
-                    
+
                 st.markdown("**Resumen por prioridad y estado**")
                 mostrar_resumen_operativo()
                 st.divider()
@@ -381,34 +411,111 @@ else:
 
         with tab_revision:
             df = cargar_baches()
-            st.subheader("Reevaluación tras inspección en campo")
-            st.caption("Si la inspección física muestra cambios en el tamaño o profundidad del bache, actualiza los valores para recalcular su urgencia.")
+            st.subheader("Inspección en campo por medidas reales y cálculo de material")
+            st.caption(
+                "Ingresa las mediciones verificadas en sitio. El sistema calcula automáticamente el nivel (1–5), "
+                "la mezcla asfáltica necesaria (con 15 % por compactación) y el presupuesto estimado."
+            )
             if df.empty:
                 st.info("No hay reportes pendientes por revisar.")
             else:
                 folio_revision = st.selectbox("Selecciona el reporte inspeccionado", df.folio.tolist(), key="folio_revision_variables")
                 bache_actual = consultar_reporte(folio_revision)
-                st.write(f"**Ubicación:** {bache_actual.ubicacion} ({bache_actual.zona}) · **Prioridad actual:** {bache_actual.nivel} ({bache_actual.puntuacion}/100)")
-                with st.form(f"form_revision_{folio_revision}"):
-                    c1, c2 = st.columns(2)
-                    tamanio_nuevo = c1.slider("Tamaño verificado (1–5)", 1, 5, int(bache_actual.tamanio))
-                    profundidad_nueva = c2.slider("Profundidad verificada (1–5)", 1, 5, int(bache_actual.profundidad))
-                    riesgo_nuevo = c1.slider("Peligro vial verificado (1–5)", 1, 5, int(bache_actual.riesgo_vial))
-                    trafico_nuevo = c2.slider("Flujo vehicular verificado (1–5)", 1, 5, int(bache_actual.trafico))
-                    nota_revision = st.text_area("Observaciones de la inspección (obligatorio)", placeholder="Ej. El hundimiento aumentó tras las lluvias recientes.")
-                    guardar_revision = st.form_submit_button("Guardar inspección y recalcular prioridad")
-                if guardar_revision:
-                    try:
-                        actualizar_variables_revision(
-                            folio_revision,
-                            {"tamanio": tamanio_nuevo, "profundidad": profundidad_nueva, "riesgo_vial": riesgo_nuevo, "trafico": trafico_nuevo},
-                            nota_revision,
-                            operador_actual,
+                st.write(
+                    f"**Ubicación:** {bache_actual.ubicacion} ({bache_actual.zona}) · "
+                    f"**Prioridad actual:** {bache_actual.nivel} ({bache_actual.puntuacion}/100)"
+                )
+
+                # Precarga valores iniciales acordes a la evaluación actual del folio seleccionado
+                largo_def, ancho_def = VALORES_REFERENCIA_TAMANIO.get(int(bache_actual.tamanio), (100.0, 80.0))
+                prof_def = VALORES_REFERENCIA_PROFUNDIDAD.get(int(bache_actual.profundidad), 8.0)
+                trafico_def = VALORES_REFERENCIA_TRAFICO.get(int(bache_actual.trafico), 10)
+                idx_riesgo_def = max(0, min(4, int(bache_actual.riesgo_vial) - 1))
+
+                c_med1, c_med2, c_med3 = st.columns(3)
+                largo_cm = c_med1.number_input(
+                    "Largo del cajeo (cm)", min_value=10.0, max_value=1000.0,
+                    value=float(largo_def), step=5.0, key=f"med_largo_{folio_revision}"
+                )
+                ancho_cm = c_med2.number_input(
+                    "Ancho del cajeo (cm)", min_value=10.0, max_value=1000.0,
+                    value=float(ancho_def), step=5.0, key=f"med_ancho_{folio_revision}"
+                )
+                profundidad_cm = c_med3.number_input(
+                    "Profundidad medida (cm)", min_value=1.0, max_value=200.0,
+                    value=float(prof_def), step=1.0, key=f"med_prof_{folio_revision}"
+                )
+
+                c_op1, c_op2 = st.columns(2)
+                vehiculos_min = c_op1.number_input(
+                    "Flujo vehicular contado (vehículos por minuto)", min_value=0, max_value=200,
+                    value=int(trafico_def), step=1, key=f"med_trafico_{folio_revision}"
+                )
+                costo_tonelada = c_op2.number_input(
+                    "Costo unitario de mezcla colocada ($ MXN / tonelada)", min_value=500.0, max_value=20000.0,
+                    value=2500.0, step=100.0, key=f"med_costo_{folio_revision}",
+                    help="Valor editable según el tabulador vigente de obra pública."
+                )
+
+                opciones_riesgo = [texto for _, texto in CRITERIOS_PELIGRO]
+                criterio_elegido = st.selectbox(
+                    "Criterio observable de peligro vial en sitio",
+                    opciones_riesgo,
+                    index=idx_riesgo_def,
+                    key=f"med_riesgo_{folio_revision}"
+                )
+                riesgo_nuevo = opciones_riesgo.index(criterio_elegido) + 1
+
+                # Cálculos automáticos en vivo
+                estimacion = calcular_material_y_costo(largo_cm, ancho_cm, profundidad_cm, costo_tonelada)
+                tamanio_nuevo = clasificar_tamanio(estimacion["area_m2"])
+                profundidad_nueva = clasificar_profundidad(profundidad_cm)
+                trafico_nuevo = clasificar_trafico(vehiculos_min)
+
+                st.markdown("**Estimación técnica de insumos y equivalencia de escala**")
+                m_ins1, m_ins2, m_ins3, m_ins4 = st.columns(4)
+                m_ins1.metric("Área de cajeo", f"{estimacion['area_m2']} m²", f"Nivel Tamaño: {tamanio_nuevo}/5")
+                m_ins2.metric("Profundidad", f"{profundidad_cm:.1f} cm", f"Nivel Prof.: {profundidad_nueva}/5")
+                m_ins3.metric(
+                    "Mezcla asfáltica",
+                    f"{estimacion['peso_kg']} kg",
+                    f"{estimacion['costales_25kg']} costales (25 kg) · {estimacion['toneladas']} t"
+                )
+                m_ins4.metric("Gasto estimado", f"${estimacion['costo_estimado']:,.2f} MXN", f"Nivel Tráfico: {trafico_nuevo}/5")
+
+                nota_revision = st.text_area(
+                    "Observaciones técnicas de la inspección (obligatorio)",
+                    placeholder="Ej. Se midió con flexómetro tras lluvias; se requiere recorte rectangular y compactación de base.",
+                    key=f"nota_med_{folio_revision}"
+                )
+
+                if st.button("Guardar inspección y recalcular prioridad", type="primary", key=f"btn_med_{folio_revision}"):
+                    if not nota_revision.strip():
+                        st.error("Escribe una observación breve sobre la inspección realizada.")
+                    else:
+                        resumen_medicion = (
+                            f"[Medición: {largo_cm:.0f}x{ancho_cm:.0f} cm ({estimacion['area_m2']} m²), "
+                            f"Prof: {profundidad_cm:.1f} cm, Flujo: {vehiculos_min} veh/min | "
+                            f"Asfalto: {estimacion['peso_kg']} kg ({estimacion['costales_25kg']} costales) | "
+                            f"Gasto est.: ${estimacion['costo_estimado']:,.2f} MXN]"
                         )
-                        st.success("Inspección registrada y prioridad actualizada.")
-                        st.rerun()
-                    except ValueError as exc:
-                        st.error(str(exc))
+                        nota_completa = f"{resumen_medicion} {nota_revision.strip()}"
+                        try:
+                            actualizar_variables_revision(
+                                folio_revision,
+                                {
+                                    "tamanio": tamanio_nuevo,
+                                    "profundidad": profundidad_nueva,
+                                    "riesgo_vial": riesgo_nuevo,
+                                    "trafico": trafico_nuevo,
+                                },
+                                nota_completa,
+                                operador_actual,
+                            )
+                            st.success("Inspección por medidas guardada y prioridad recalculada.")
+                            st.rerun()
+                        except ValueError as exc:
+                            st.error(str(exc))
 
                 st.divider()
                 st.subheader("Historial de ajustes de urgencia")
@@ -426,7 +533,7 @@ else:
                 mostrar_historial(obtener_historial(folio_reparado))
                 st.subheader("Historial de ajustes de urgencia")
                 mostrar_historial_prioridad(obtener_historial_prioridad(folio_reparado))
-                
+
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #888888; font-size: 0.85em; padding-top: 20px;'>"
