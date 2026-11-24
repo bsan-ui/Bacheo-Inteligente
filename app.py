@@ -23,6 +23,11 @@ from services.mediciones import (
     calcular_material_y_costo,
 )
 from services.seguimiento import actualizar_estado, obtener_historial, ESTADOS_VALIDOS
+from services.carga_csv import (
+    generar_plantilla_csv,
+    validar_csv_reportes,
+    importar_filas_validas,
+)
 from analytics.tablas import cargar_baches, cargar_reparados, resumen_estados
 from analytics.prediccion import (
     probabilidad_nuevo_bache,
@@ -582,6 +587,76 @@ else:
                 mostrar_historial(obtener_historial(folio_reparado))
                 st.subheader("Historial de ajustes de urgencia")
                 mostrar_historial_prioridad(obtener_historial_prioridad(folio_reparado))
+
+        with cargar_csv:
+            st.subheader("Carga masiva por CSV (teléfono, ventanilla, brigadas y jornadas)")
+            st.caption(
+                "Usa la plantilla oficial con las colonias verificadas (Santa María Tepepan, "
+                "Bosque Residencial del Sur y San Juan Tepepan) y valores del 1 al 5."
+            )
+
+            plantilla_csv = generar_plantilla_csv(incluir_ejemplo=True)
+            st.download_button(
+                label="Descargar plantilla CSV",
+                data=plantilla_csv,
+                file_name="plantilla_baches_xochimilco.csv",
+                mime="text/csv",
+            )
+            
+            archivo_csv = st.file_uploader(
+                "Sube el archivo CSV completado",
+                type=["csv"],
+                key="uploader_carga_csv_admin",
+            )
+            
+            if archivo_csv is not None:
+                resultado_csv = validar_csv_reportes(archivo_csv.getvalue())
+            
+                if resultado_csv["columnas_faltantes"]:
+                    st.error(
+                        "Al archivo le faltan columnas obligatorias: "
+                        + ", ".join(resultado_csv["columnas_faltantes"])
+                    )
+                else:
+                    filas_validas = resultado_csv["filas_validas"]
+                    errores = resultado_csv["errores"]
+            
+                    col_v, col_e = st.columns(2)
+                    col_v.metric("Filas válidas", len(filas_validas))
+                    col_e.metric("Filas con error", len(errores))
+            
+                    if filas_validas:
+                        st.markdown("**Vista previa de filas válidas listas para guardar**")
+                        st.dataframe(
+                            [
+                                {
+                                    "Fila CSV": item["fila_csv"],
+                                    "Colonia": item["datos"]["zona"],
+                                    "Ubicación": item["datos"]["ubicacion"],
+                                    "Tipo de vía": item["datos"]["tipo_via"],
+                                    "Tamaño": item["datos"]["tamanio"],
+                                    "Profundidad": item["datos"]["profundidad"],
+                                    "Riesgo vial": item["datos"]["riesgo_vial"],
+                                    "Tráfico": item["datos"]["trafico"],
+                                }
+                                for item in filas_validas
+                            ],
+                            use_container_width=True,
+                        )
+            
+                    if errores:
+                        st.markdown("**Filas con observaciones / errores (no se insertarán)**")
+                        st.dataframe(errores, use_container_width=True)
+            
+                    if filas_validas and st.button(
+                        f"Importar {len(filas_validas)} reporte(s) válido(s)",
+                        type="primary",
+                        key="btn_importar_csv_admin",
+                    ):
+                        creados = importar_filas_validas(filas_validas)
+                        st.success(f"Se registraron {len(creados)} reporte(s) en la base de datos.")
+                        st.dataframe(creados, use_container_width=True)
+                        st.rerun()
 
 st.markdown("---")
 st.markdown(
