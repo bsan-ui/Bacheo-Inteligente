@@ -329,7 +329,7 @@ else:
             "📋 Reportes pendientes",
             "🚚 Ruta para cuadrillas",
             "🔧 Inspección y ajuste",
-            "✅ Historial de reparados"
+            "✅ Historial de reparados",
             "📤 Carga masiva CSV",
         ])
 
