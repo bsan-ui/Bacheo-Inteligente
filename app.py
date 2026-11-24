@@ -330,7 +330,7 @@ else:
             "🚚 Ruta para cuadrillas",
             "🔧 Inspección y ajuste",
             "✅ Historial de reparados",
-            "📤 Carga masiva CSV",
+            "📤 Carga de CSV",
         ])
 
         with tab_cola:
