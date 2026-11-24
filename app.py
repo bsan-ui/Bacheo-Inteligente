@@ -330,6 +330,7 @@ else:
             "🚚 Ruta para cuadrillas",
             "🔧 Inspección y ajuste",
             "✅ Historial de reparados"
+            "📤 Carga masiva CSV",
         ])
 
         with tab_cola:
@@ -480,7 +481,6 @@ else:
                     f"**Prioridad actual:** {bache_actual.nivel} ({bache_actual.puntuacion}/100)"
                 )
 
-                # Precarga valores iniciales acordes a la evaluación actual del folio seleccionado
                 largo_def, ancho_def = VALORES_REFERENCIA_TAMANIO.get(int(bache_actual.tamanio), (100.0, 80.0))
                 prof_def = VALORES_REFERENCIA_PROFUNDIDAD.get(int(bache_actual.profundidad), 8.0)
                 trafico_def = VALORES_REFERENCIA_TRAFICO.get(int(bache_actual.trafico), 10)
@@ -520,7 +520,6 @@ else:
                 )
                 riesgo_nuevo = opciones_riesgo.index(criterio_elegido) + 1
 
-                # Cálculos automáticos en vivo
                 estimacion = calcular_material_y_costo(largo_cm, ancho_cm, profundidad_cm, costo_tonelada)
                 tamanio_nuevo = clasificar_tamanio(estimacion["area_m2"])
                 profundidad_nueva = clasificar_profundidad(profundidad_cm)
@@ -588,7 +587,7 @@ else:
                 st.subheader("Historial de ajustes de urgencia")
                 mostrar_historial_prioridad(obtener_historial_prioridad(folio_reparado))
 
-        with cargar_csv:
+        with tab_csv:
             st.subheader("Carga masiva por CSV (teléfono, ventanilla, brigadas y jornadas)")
             st.caption(
                 "Usa la plantilla oficial con las colonias verificadas (Santa María Tepepan, "
@@ -602,16 +601,16 @@ else:
                 file_name="plantilla_baches_xochimilco.csv",
                 mime="text/csv",
             )
-            
+
             archivo_csv = st.file_uploader(
                 "Sube el archivo CSV completado",
                 type=["csv"],
                 key="uploader_carga_csv_admin",
             )
-            
+
             if archivo_csv is not None:
                 resultado_csv = validar_csv_reportes(archivo_csv.getvalue())
-            
+
                 if resultado_csv["columnas_faltantes"]:
                     st.error(
                         "Al archivo le faltan columnas obligatorias: "
@@ -620,11 +619,11 @@ else:
                 else:
                     filas_validas = resultado_csv["filas_validas"]
                     errores = resultado_csv["errores"]
-            
+
                     col_v, col_e = st.columns(2)
                     col_v.metric("Filas válidas", len(filas_validas))
                     col_e.metric("Filas con error", len(errores))
-            
+
                     if filas_validas:
                         st.markdown("**Vista previa de filas válidas listas para guardar**")
                         st.dataframe(
@@ -641,13 +640,14 @@ else:
                                 }
                                 for item in filas_validas
                             ],
-                            use_container_width=True,
+                            width='stretch',
+                            hide_index=True,
                         )
-            
+
                     if errores:
                         st.markdown("**Filas con observaciones / errores (no se insertarán)**")
-                        st.dataframe(errores, use_container_width=True)
-            
+                        st.dataframe(errores, width='stretch', hide_index=True)
+
                     if filas_validas and st.button(
                         f"Importar {len(filas_validas)} reporte(s) válido(s)",
                         type="primary",
@@ -655,9 +655,9 @@ else:
                     ):
                         creados = importar_filas_validas(filas_validas)
                         st.success(f"Se registraron {len(creados)} reporte(s) en la base de datos.")
-                        st.dataframe(creados, use_container_width=True)
+                        st.dataframe(creados, width='stretch', hide_index=True)
                         st.rerun()
-
+                        
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #888888; font-size: 0.85em; padding-top: 20px;'>"
