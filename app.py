@@ -325,7 +325,7 @@ else:
 
         operador_actual = st.session_state.get("admin_usuario", "admin")
 
-        tab_cola, tab_ruta, tab_revision, tab_reparados = st.tabs([
+        tab_cola, tab_ruta, tab_revision, tab_reparados, tab_csv = st.tabs([
             "📋 Reportes pendientes",
             "🚚 Ruta para cuadrillas",
             "🔧 Inspección y ajuste",
