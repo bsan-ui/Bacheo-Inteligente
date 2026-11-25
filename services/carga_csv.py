@@ -15,6 +15,195 @@ from services.mediciones import (
 )
 from services.seguimiento import actualizar_estado, ESTADOS_VALIDOS
 
+COLUMNAS_NUEVOS_CSV = [
+    "canal_origen",
+    "zona",
+    "ubicacion",
+    "referencia",
+    "tipo_via",
+    "tamanio",
+    "profundidad",
+    "riesgo_vial",
+    "trafico",
+    "agua_drenaje",
+    "descripcion",
+]
+
+_NORMALIZAR_TIPO_VIA = {
+    "": "No sé",
+    "avenida": "Avenida",
+    "calle local": "Calle local",
+    "cruce": "Cruce",
+    "intersección": "Cruce",
+    "interseccion": "Cruce",
+    "cerca de escuela/hospital": "Cerca de escuela/hospital",
+    "no sé": "No sé",
+    "no se": "No sé",
+}
+
+
+def generar_plantilla_nuevos_csv(incluir_ejemplo=True):
+    """Genera la plantilla CSV para cargar reportes nuevos de canales analógicos/presenciales o jornadas."""
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=COLUMNAS_NUEVOS_CSV)
+    writer.writeheader()
+    if incluir_ejemplo:
+        writer.writerow(
+            {
+                "canal_origen": "Teléfono",
+                "zona": "Santa María Tepepan",
+                "ubicacion": "Av. 16 de Septiembre",
+                "referencia": "Cruce con Calle 5 de Mayo",
+                "tipo_via": "Avenida",
+                "tamanio": 4,
+                "profundidad": 4,
+                "riesgo_vial": 4,
+                "trafico": 4,
+                "agua_drenaje": "no",
+                "descripcion": "Reporte recibido por llamada telefónica.",
+            }
+        )
+    return buffer.getvalue().encode("utf-8-sig")
+
+
+def _parsear_entero_1_5(valor, nombre_campo):
+    texto = str(valor).strip() if valor is not None else ""
+    try:
+        num = int(float(texto))
+    except ValueError:
+        raise ValueError(f"{nombre_campo} debe ser un entero del 1 al 5 (recibido: '{texto}').")
+    if str(num) != texto.split(".")[0] or not (1 <= num <= 5):
+        raise ValueError(f"{nombre_campo} debe estar entre 1 y 5 (recibido: '{texto}').")
+    return num
+
+
+def _parsear_booleano(valor):
+    texto = str(valor).strip().lower() if valor is not None else ""
+    if texto in {"1", "si", "sí", "s", "true", "verdadero", "yes", "y"}:
+        return True
+    if texto in {"", "0", "no", "n", "false", "falso"}:
+        return False
+    raise ValueError(f"agua_drenaje debe ser 'sí'/'no' o '1'/'0' (recibido: '{texto}').")
+
+
+def _resolver_zona(valor_zona):
+    limpio = (valor_zona or "").strip()
+    for zona_oficial in COLONIAS_XOCHIMILCO.keys():
+        if zona_oficial.lower() == limpio.lower():
+            return zona_oficial
+    raise ValueError(
+        f"Colonia no válida ('{limpio}'). Usa: {', '.join(COLONIAS_XOCHIMILCO.keys())}."
+    )
+
+
+def _resolver_ubicacion(zona, valor_ubicacion):
+    limpio = (valor_ubicacion or "").strip()
+    if not limpio:
+        raise ValueError("La columna 'ubicacion' es obligatoria.")
+    calles_zona = COLONIAS_XOCHIMILCO[zona]
+    for calle in calles_zona:
+        if calle.lower() == limpio.lower():
+            return calle
+    if limpio.lower().startswith("otra calle"):
+        return "Otra calle (indicar en referencia)"
+    raise ValueError(
+        f"La calle '{limpio}' no figura en '{zona}'. Usa una calle confirmada de esa colonia "
+        f"o escribe 'Otra calle (indicar en referencia)' y detalla la calle en 'referencia'."
+    )
+
+
+def _resolver_tipo_via(valor_tipo):
+    limpio = (valor_tipo or "").strip().lower()
+    if limpio not in _NORMALIZAR_TIPO_VIA:
+        raise ValueError(
+            f"tipo_via no reconocido ('{valor_tipo}'). Usa Calle local, Avenida, Cruce, Cerca de escuela/hospital o No sé."
+        )
+    return _NORMALIZAR_TIPO_VIA[limpio]
+
+
+def validar_csv_nuevos_reportes(archivo_bytes):
+    """Valida filas de reportes nuevos sin insertar en la base de datos."""
+    if not archivo_bytes:
+        return {"columnas_faltantes": COLUMNAS_NUEVOS_CSV, "filas_validas": [], "errores": []}
+
+    texto = archivo_bytes.decode("utf-8-sig", errors="replace")
+    lector = csv.DictReader(io.StringIO(texto))
+    encabezados = [c.strip() for c in (lector.fieldnames or [])]
+    faltantes = [col for col in COLUMNAS_NUEVOS_CSV if col not in encabezados]
+    if faltantes:
+        return {"columnas_faltantes": faltantes, "filas_validas": [], "errores": []}
+
+    filas_validas = []
+    errores = []
+
+    for num_fila, fila in enumerate(lector, start=2):
+        if all(not str(v or "").strip() for v in fila.values()):
+            continue
+
+        try:
+            canal = (fila.get("canal_origen") or "").strip()
+            zona = _resolver_zona(fila.get("zona", ""))
+            ubicacion_base = _resolver_ubicacion(zona, fila.get("ubicacion", ""))
+            referencia = (fila.get("referencia") or "").strip()
+            tipo_via = _resolver_tipo_via(fila.get("tipo_via", ""))
+            tamanio = _parsear_entero_1_5(fila.get("tamanio"), "tamanio")
+            profundidad = _parsear_entero_1_5(fila.get("profundidad"), "profundidad")
+            riesgo_vial = _parsear_entero_1_5(fila.get("riesgo_vial"), "riesgo_vial")
+            trafico = _parsear_entero_1_5(fila.get("trafico"), "trafico")
+            agua = _parsear_booleano(fila.get("agua_drenaje"))
+            desc_base = (fila.get("descripcion") or "").strip()
+
+            ubicacion_final = f"{ubicacion_base} ({referencia})" if referencia else ubicacion_base
+
+            partes_desc = []
+            if agua:
+                partes_desc.append("[Red hidráulica/drenaje]")
+            if canal:
+                partes_desc.append(f"[Canal: {canal}]")
+            if desc_base:
+                partes_desc.append(desc_base)
+
+            descripcion_final = " ".join(partes_desc).strip() or "Reporte cargado mediante CSV."
+
+            filas_validas.append(
+                {
+                    "fila_csv": num_fila,
+                    "canal_origen": canal or "No especificado",
+                    "datos": {
+                        "ubicacion": ubicacion_final,
+                        "zona": zona,
+                        "tamanio": tamanio,
+                        "profundidad": profundidad,
+                        "riesgo_vial": riesgo_vial,
+                        "trafico": trafico,
+                        "tipo_via": tipo_via,
+                        "descripcion": descripcion_final,
+                    },
+                }
+            )
+        except ValueError as exc:
+            errores.append({"fila_csv": num_fila, "error": str(exc)})
+
+    return {"columnas_faltantes": [], "filas_validas": filas_validas, "errores": errores}
+
+
+def importar_nuevos_reportes_csv(filas_validas):
+    """Crea folios nuevos en la base de datos a partir de filas previamente validadas."""
+    creados = []
+    for item in filas_validas:
+        folio = crear_reporte(item["datos"])
+        creados.append(
+            {
+                "fila_csv": item["fila_csv"],
+                "folio": folio,
+                "canal_origen": item.get("canal_origen", ""),
+                "zona": item["datos"]["zona"],
+                "ubicacion": item["datos"]["ubicacion"],
+            }
+        )
+    return creados
+
+
 COLUMNAS_RUTA_CSV = [
     "folio",
     "zona",
@@ -82,7 +271,6 @@ def _resolver_criterio_peligro(valor, fallback_nivel):
     texto = str(valor).strip() if valor is not None else ""
     if texto == "":
         return int(fallback_nivel)
-    # Permite número 1..5 o texto exacto / coincidencia de CRITERIOS_PELIGRO
     if texto in {"1", "2", "3", "4", "5"}:
         return int(texto)
     for idx, (_, desc) in enumerate(CRITERIOS_PELIGRO, start=1):
