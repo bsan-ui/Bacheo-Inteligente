@@ -23,11 +23,16 @@ from services.mediciones import (
     calcular_material_y_costo,
 )
 from services.seguimiento import actualizar_estado, obtener_historial, ESTADOS_VALIDOS
+
 from services.carga_csv import (
-    generar_plantilla_csv,
-    validar_csv_reportes,
-    importar_filas_validas,
+    generar_plantilla_nuevos_csv,
+    validar_csv_nuevos_reportes,
+    importar_nuevos_reportes_csv,
+    generar_csv_ruta_cuadrilla,
+    validar_csv_actualizacion_ruta,
+    aplicar_actualizaciones_ruta_csv,
 )
+
 from analytics.tablas import cargar_baches, cargar_reparados, resumen_estados
 from analytics.prediccion import (
     probabilidad_nuevo_bache,
