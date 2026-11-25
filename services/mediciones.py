@@ -112,4 +112,6 @@ def calcular_material_y_costo(largo_cm, ancho_cm, profundidad_cm, costo_por_tone
         "costo_superficial_max": round(costo_superficial_max, 2),
         "costo_superficial_ref": round(costo_superficial_ref, 2),
         "posible_dano_estructural": posible_dano_estructural,
+        "valor_esperado_caso": VALOR_ESPERADO_CASO_MXN,
+        "referencia_dano_vehicular": REFERENCIA_DANO_VEHICULAR_MXN,
     }
