@@ -4,6 +4,12 @@ DENSIDAD_ASFALTO_KG_M3 = 2350.0
 FACTOR_COMPACTACION = 1.15  # 15 % extra por compactación y merma en cajeo
 PESO_COSTAL_KG = 25.0
 
+COSTO_M2_MIN_MXN = 400.0
+COSTO_M2_MAX_MXN = 500.0
+COSTO_M2_REF_MXN = 450.0
+VALOR_ESPERADO_CASO_MXN = 925.0  # 15% * $1,500 + 10% * $7,000
+REFERENCIA_DANO_VEHICULAR_MXN = 7000.0
+
 CRITERIOS_PELIGRO = [
     (1, "1 — Mínimo: en orilla o calle lenta (< 20 km/h), fácil de esquivar"),
     (2, "2 — Bajo: dentro del carril en calle lenta (20–30 km/h), visible a distancia"),
@@ -81,13 +87,19 @@ def clasificar_trafico(vehiculos_por_minuto):
 
 
 def calcular_material_y_costo(largo_cm, ancho_cm, profundidad_cm, costo_por_tonelada):
-    """Calcula área (m²), volumen compactado (m³), asfalto (kg/ton/costales) y costo estimado."""
+    """Calcula insumos asfálticos, estimación por m² (tabulador superficial) y referencia de riesgo."""
     area_m2 = (largo_cm / 100.0) * (ancho_cm / 100.0)
     volumen_m3 = area_m2 * (profundidad_cm / 100.0) * FACTOR_COMPACTACION
     peso_kg = volumen_m3 * DENSIDAD_ASFALTO_KG_M3
     toneladas = peso_kg / 1000.0
     costales_25kg = math.ceil(peso_kg / PESO_COSTAL_KG)
-    costo_estimado = toneladas * costo_por_tonelada
+    costo_por_tonelada_calc = toneladas * costo_por_tonelada
+
+    costo_superficial_min = area_m2 * COSTO_M2_MIN_MXN
+    costo_superficial_max = area_m2 * COSTO_M2_MAX_MXN
+    costo_superficial_ref = area_m2 * COSTO_M2_REF_MXN
+
+    posible_dano_estructural = profundidad_cm >= 10.0
 
     return {
         "area_m2": round(area_m2, 2),
@@ -95,5 +107,9 @@ def calcular_material_y_costo(largo_cm, ancho_cm, profundidad_cm, costo_por_tone
         "peso_kg": round(peso_kg, 1),
         "toneladas": round(toneladas, 3),
         "costales_25kg": costales_25kg,
-        "costo_estimado": round(costo_estimado, 2),
+        "costo_estimado": round(costo_por_tonelada_calc, 2),
+        "costo_superficial_min": round(costo_superficial_min, 2),
+        "costo_superficial_max": round(costo_superficial_max, 2),
+        "costo_superficial_ref": round(costo_superficial_ref, 2),
+        "posible_dano_estructural": posible_dano_estructural,
     }
