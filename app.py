@@ -343,11 +343,13 @@ else:
             if df.empty:
                 st.info("Por el momento no hay reportes pendientes de atención.")
             else:
+                # 1. KPIs superiores
                 col_m1, col_m2, col_m3 = st.columns(3)
                 col_m1.metric("Reportes activos", len(df))
                 col_m2.metric("Casos en Emergencia", int((df["nivel"] == "Emergencia").sum()))
                 col_m3.metric("Urgencia promedio", f"{df['puntuacion'].mean():.1f}/100")
-                
+
+                # 2. Operación rápida siempre visible
                 with st.container(border=True):
                     st.subheader("Actualizar estado de atención")
                     c_est1, c_est2 = st.columns(2)
@@ -379,6 +381,7 @@ else:
 
                 st.divider()
 
+                # 3. Listado general siempre visible con filtros
                 st.markdown("**Listado general de reportes por atender**")
                 f_col1, f_col2, f_col3 = st.columns(3)
                 filtro_zona = f_col1.selectbox(
@@ -412,78 +415,84 @@ else:
 
                 st.divider()
 
-                col_g1, col_g2 = st.columns(2)
-                with col_g1:
-                    st.markdown("**Distribución por colonia y prioridad**")
-                    tabla_cruzada = pd.crosstab(df["zona"], df["nivel"])
-                    mapa_colores = {
-                        "Emergencia": "#E53935",
-                        "Prioridad alta": "#FB8C00",
-                        "Prioridad media": "#FDD835",
-                        "Prioridad baja": "#1E88E5",
-                    }
-                    colores = [mapa_colores.get(col, "#757575") for col in tabla_cruzada.columns]
-                    st.bar_chart(tabla_cruzada, color=colores)
+                # 4. Gráficas y resumen en pestaña interna
+                sub_graficas, sub_resumen = st.tabs([
+                    "📈 Gráficas de urgencia",
+                    "📑 Resumen por prioridad y estado",
+                ])
 
-                with col_g2:
-                    st.markdown("**Relación entre profundidad e índice de urgencia**")
-                    df_dispersion = df[["profundidad", "puntuacion", "nivel", "tamanio"]].rename(
-                        columns={
-                            "profundidad": "Profundidad (1–5)",
-                            "puntuacion": "Urgencia (0–100)",
-                            "nivel": "Nivel de prioridad",
-                            "tamanio": "Tamaño (1–5)",
+                with sub_graficas:
+                    col_g1, col_g2 = st.columns(2)
+                    with col_g1:
+                        st.markdown("**Distribución por colonia y prioridad**")
+                        tabla_cruzada = pd.crosstab(df["zona"], df["nivel"])
+                        mapa_colores = {
+                            "Emergencia": "#E53935",
+                            "Prioridad alta": "#FB8C00",
+                            "Prioridad media": "#FDD835",
+                            "Prioridad baja": "#1E88E5",
                         }
-                    )
-                    niveles_orden = [
-                        "Emergencia",
-                        "Prioridad alta",
-                        "Prioridad media",
-                        "Prioridad baja",
-                        "En revisión",
-                    ]
-                    colores_fijos = ["#E53935", "#FB8C00", "#FDD835", "#1E88E5", "#757575"]
-                    escala_color = alt.Scale(domain=niveles_orden, range=colores_fijos)
+                        colores = [mapa_colores.get(col, "#757575") for col in tabla_cruzada.columns]
+                        st.bar_chart(tabla_cruzada, color=colores)
 
-                    dispersion_chart = (
-                        alt.Chart(df_dispersion)
-                        .mark_circle(opacity=0.88, stroke="#1d1b16", strokeWidth=0.6)
-                        .encode(
-                            x=alt.X(
-                                "Profundidad (1–5):Q",
-                                scale=alt.Scale(domain=[0.5, 5.5]),
-                                title="Profundidad (1–5)",
-                            ),
-                            y=alt.Y(
-                                "Urgencia (0–100):Q",
-                                scale=alt.Scale(domain=[0, 105]),
-                                title="Urgencia (0–100)",
-                            ),
-                            color=alt.Color(
-                                "Nivel de prioridad:N",
-                                scale=escala_color,
-                                legend=alt.Legend(title="Nivel de prioridad"),
-                            ),
-                            size=alt.Size(
-                                "Tamaño (1–5):Q",
-                                scale=alt.Scale(range=[80, 420]),
-                                legend=alt.Legend(title="Tamaño (1–5)"),
-                            ),
-                            tooltip=[
-                                "Nivel de prioridad:N",
-                                "Profundidad (1–5):Q",
-                                "Urgencia (0–100):Q",
-                                "Tamaño (1–5):Q",
-                            ],
+                    with col_g2:
+                        st.markdown("**Relación entre profundidad e índice de urgencia**")
+                        df_dispersion = df[["profundidad", "puntuacion", "nivel", "tamanio"]].rename(
+                            columns={
+                                "profundidad": "Profundidad (1–5)",
+                                "puntuacion": "Urgencia (0–100)",
+                                "nivel": "Nivel de prioridad",
+                                "tamanio": "Tamaño (1–5)",
+                            }
                         )
-                        .interactive()
-                    )
-                    st.altair_chart(dispersion_chart, use_container_width=True)
+                        niveles_orden = [
+                            "Emergencia",
+                            "Prioridad alta",
+                            "Prioridad media",
+                            "Prioridad baja",
+                            "En revisión",
+                        ]
+                        colores_fijos = ["#E53935", "#FB8C00", "#FDD835", "#1E88E5", "#757575"]
+                        escala_color = alt.Scale(domain=niveles_orden, range=colores_fijos)
 
-                st.divider()
+                        dispersion_chart = (
+                            alt.Chart(df_dispersion)
+                            .mark_circle(opacity=0.88, stroke="#1d1b16", strokeWidth=0.6)
+                            .encode(
+                                x=alt.X(
+                                    "Profundidad (1–5):Q",
+                                    scale=alt.Scale(domain=[0.5, 5.5]),
+                                    title="Profundidad (1–5)",
+                                ),
+                                y=alt.Y(
+                                    "Urgencia (0–100):Q",
+                                    scale=alt.Scale(domain=[0, 105]),
+                                    title="Urgencia (0–100)",
+                                ),
+                                color=alt.Color(
+                                    "Nivel de prioridad:N",
+                                    scale=escala_color,
+                                    legend=alt.Legend(title="Nivel de prioridad"),
+                                ),
+                                size=alt.Size(
+                                    "Tamaño (1–5):Q",
+                                    scale=alt.Scale(range=[80, 420]),
+                                    legend=alt.Legend(title="Tamaño (1–5)"),
+                                ),
+                                tooltip=[
+                                    "Nivel de prioridad:N",
+                                    "Profundidad (1–5):Q",
+                                    "Urgencia (0–100):Q",
+                                    "Tamaño (1–5):Q",
+                                ],
+                            )
+                            .interactive()
+                        )
+                        st.altair_chart(dispersion_chart, use_container_width=True)
 
-                st.markdown("**Resumen por prioridad y estado**")
-                mostrar_resumen_operativo()
+                with sub_resumen:
+                    st.markdown("**Resumen por prioridad y estado**")
+                    mostrar_resumen_operativo()
 
         with tab_ruta:
             st.subheader("Ruta sugerida de atención por colonia")
