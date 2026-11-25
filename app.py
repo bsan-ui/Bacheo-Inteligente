@@ -426,13 +426,7 @@ else:
 
                 st.markdown("**Listado general de reportes por atender**")
                 mostrar_tabla_baches(df)
-                st.download_button(
-                    "Descargar listado en Excel (CSV)",
-                    df.to_csv(index=False).encode("utf-8-sig"),
-                    "reportes_xochimilco.csv",
-                    "text/csv"
-                )
-
+                
                 st.divider()
                 st.subheader("Actualizar estado de atención")
                 folio_estado = st.selectbox("Selecciona el folio a actualizar", df.folio.tolist(), key="folio_cambio_estado")
@@ -463,6 +457,12 @@ else:
 
                 recorrido = lista_ruta.obtener_recorrido()
                 st.dataframe(recorrido, width='stretch', hide_index=True)
+                st.download_button(
+                    label=f"Descargar CSV de ruta ({colonia_ruta})",
+                    data=generar_csv_ruta_cuadrilla(recorrido),
+                    file_name=f"ruta_{colonia_ruta.lower().replace(' ', '_')}.csv",
+                    mime="text/csv",
+                )
 
         with tab_revision:
             df = cargar_baches()
