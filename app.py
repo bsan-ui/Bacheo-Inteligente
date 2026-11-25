@@ -347,6 +347,70 @@ else:
                 col_m1.metric("Reportes activos", len(df))
                 col_m2.metric("Casos en Emergencia", int((df["nivel"] == "Emergencia").sum()))
                 col_m3.metric("Urgencia promedio", f"{df['puntuacion'].mean():.1f}/100")
+                
+                with st.container(border=True):
+                    st.subheader("Actualizar estado de atención")
+                    c_est1, c_est2 = st.columns(2)
+                    folio_estado = c_est1.selectbox(
+                        "Selecciona el folio a actualizar",
+                        df["folio"].tolist(),
+                        key="folio_cambio_estado",
+                    )
+                    estado_actual_folio = df.loc[df["folio"] == folio_estado, "estado"].iloc[0]
+                    c_est2.info(f"Estado actual de **{folio_estado}**: **{estado_actual_folio}**")
+
+                    estado_nuevo = st.selectbox(
+                        "Nuevo estado del reporte",
+                        sorted(ESTADOS_VALIDOS),
+                        key="estado_nuevo",
+                    )
+                    nota_estado = st.text_input(
+                        "Nota de seguimiento",
+                        placeholder="Ej. Cuadrilla asignada para revisión matutina",
+                        key="nota_cambio_estado",
+                    )
+                    if st.button("Guardar cambio de estado", type="primary", key="guardar_estado"):
+                        try:
+                            actualizar_estado(folio_estado, estado_nuevo, nota_estado.strip(), operador_actual)
+                            st.success("Estado actualizado correctamente.")
+                            st.rerun()
+                        except ValueError as exc:
+                            st.error(str(exc))
+
+                st.divider()
+
+                st.markdown("**Listado general de reportes por atender**")
+                f_col1, f_col2, f_col3 = st.columns(3)
+                filtro_zona = f_col1.selectbox(
+                    "Colonia",
+                    ["Todas"] + sorted(df["zona"].dropna().unique().tolist()),
+                    key="filtro_zona_cola",
+                )
+                filtro_nivel = f_col2.selectbox(
+                    "Prioridad",
+                    ["Todas"] + sorted(df["nivel"].dropna().unique().tolist()),
+                    key="filtro_nivel_cola",
+                )
+                filtro_texto = f_col3.text_input(
+                    "Buscar folio o calle",
+                    placeholder="Ej. B- o Av. 16 de Septiembre",
+                    key="filtro_texto_cola",
+                ).strip().lower()
+
+                df_filtrado = df.copy()
+                if filtro_zona != "Todas":
+                    df_filtrado = df_filtrado[df_filtrado["zona"] == filtro_zona]
+                if filtro_nivel != "Todas":
+                    df_filtrado = df_filtrado[df_filtrado["nivel"] == filtro_nivel]
+                if filtro_texto:
+                    df_filtrado = df_filtrado[
+                        df_filtrado["folio"].astype(str).str.lower().str.contains(filtro_texto, na=False)
+                        | df_filtrado["ubicacion"].astype(str).str.lower().str.contains(filtro_texto, na=False)
+                    ]
+
+                mostrar_tabla_baches(df_filtrado)
+
+                st.divider()
 
                 col_g1, col_g2 = st.columns(2)
                 with col_g1:
@@ -371,7 +435,6 @@ else:
                             "tamanio": "Tamaño (1–5)",
                         }
                     )
-                
                     niveles_orden = [
                         "Emergencia",
                         "Prioridad alta",
@@ -379,16 +442,9 @@ else:
                         "Prioridad baja",
                         "En revisión",
                     ]
-                    colores_fijos = [
-                        "#E53935",
-                        "#FB8C00",
-                        "#FDD835",
-                        "#1E88E5",
-                        "#757575",
-                    ]
-                
+                    colores_fijos = ["#E53935", "#FB8C00", "#FDD835", "#1E88E5", "#757575"]
                     escala_color = alt.Scale(domain=niveles_orden, range=colores_fijos)
-                
+
                     dispersion_chart = (
                         alt.Chart(df_dispersion)
                         .mark_circle(opacity=0.88, stroke="#1d1b16", strokeWidth=0.6)
@@ -422,28 +478,12 @@ else:
                         )
                         .interactive()
                     )
-                
                     st.altair_chart(dispersion_chart, use_container_width=True)
+
+                st.divider()
 
                 st.markdown("**Resumen por prioridad y estado**")
                 mostrar_resumen_operativo()
-                st.divider()
-
-                st.markdown("**Listado general de reportes por atender**")
-                mostrar_tabla_baches(df)
-                
-                st.divider()
-                st.subheader("Actualizar estado de atención")
-                folio_estado = st.selectbox("Selecciona el folio a actualizar", df.folio.tolist(), key="folio_cambio_estado")
-                estado_nuevo = st.selectbox("Nuevo estado del reporte", sorted(ESTADOS_VALIDOS), key="estado_nuevo")
-                nota_estado = st.text_input("Nota de seguimiento", placeholder="Ej. Cuadrilla asignada para revisión matutina", key="nota_cambio_estado")
-                if st.button("Guardar cambio de estado", key="guardar_estado"):
-                    try:
-                        actualizar_estado(folio_estado, estado_nuevo, nota_estado.strip(), operador_actual)
-                        st.success("Estado actualizado correctamente.")
-                        st.rerun()
-                    except ValueError as exc:
-                        st.error(str(exc))
 
         with tab_ruta:
             st.subheader("Ruta sugerida de atención por colonia")
