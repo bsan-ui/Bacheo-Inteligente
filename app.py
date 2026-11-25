@@ -541,11 +541,20 @@ else:
                 )
                 m_ins4.metric("Gasto estimado", f"${estimacion['costo_estimado']:,.2f} MXN", f"Nivel Tráfico: {trafico_nuevo}/5")
 
-                nota_revision = st.text_area(
-                    "Observaciones técnicas de la inspección (obligatorio)",
-                    placeholder="Ej. Se midió con flexómetro tras lluvias; se requiere recorte rectangular y compactación de base.",
-                    key=f"nota_med_{folio_revision}"
+                st.caption(
+                    f"Referencia bacheo superficial ($400–$500 MXN/m², ref. $450/m²): "
+                    f"**${estimacion['costo_superficial_ref']:,.2f} MXN** "
+                    f"(rango ${estimacion['costo_superficial_min']:,.2f} – ${estimacion['costo_superficial_max']:,.2f} MXN) · "
+                    f"Referencia daño vehicular: **${estimacion['referencia_dano_vehicular']:,.2f} MXN** · "
+                    f"Valor esperado ilustrativo (NIF C-9): **${estimacion['valor_esperado_caso']:,.2f} MXN/caso**."
                 )
+
+                if estimacion["posible_dano_estructural"]:
+                    st.warning(
+                        "⚠️ **Posible daño estructural (criterio SOBSE):** Profundidades de 10 cm o más "
+                        "superan el desgaste superficial (< 5 cm); evalúa si requiere fresado, "
+                        "restitución de base hidráulica o atención por escorrentía/drenaje."
+                    )
 
                 if st.button("Guardar inspección y recalcular prioridad", type="primary", key=f"btn_med_{folio_revision}"):
                     if not nota_revision.strip():
