@@ -593,75 +593,153 @@ else:
                 mostrar_historial_prioridad(obtener_historial_prioridad(folio_reparado))
 
         with tab_csv:
-            st.subheader("Carga masiva por CSV (teléfono, ventanilla, brigadas y jornadas)")
+            st.subheader("Carga de CSV")
             st.caption(
-                "Usa la plantilla oficial con las colonias verificadas (Santa María Tepepan, "
-                "Bosque Residencial del Sur y San Juan Tepepan) y valores del 1 al 5."
+                "Gestiona dos flujos operativos: (1) registrar reportes nuevos captados por teléfono, redes, "
+                "ventanilla, brigadas o jornadas, y (2) aplicar actualizaciones de estado y medidas de campo "
+                "sobre folios ya existentes en una ruta de cuadrilla."
             )
 
-            plantilla_csv = generar_plantilla_csv(incluir_ejemplo=True)
-            st.download_button(
-                label="Descargar plantilla CSV",
-                data=plantilla_csv,
-                file_name="plantilla_baches_xochimilco.csv",
-                mime="text/csv",
-            )
+            sub_nuevos, sub_ruta_csv = st.tabs([
+                "➕ Altas nuevas (teléfono, redes, presencial o jornada)",
+                "🚚 Cierre / actualización de ruta de cuadrilla",
+            ])
 
-            archivo_csv = st.file_uploader(
-                "Sube el archivo CSV completado",
-                type=["csv"],
-                key="uploader_carga_csv_admin",
-            )
+            with sub_nuevos:
+                st.markdown("**1. Descarga la plantilla para reportes nuevos**")
+                st.caption(
+                    "Usa las colonias verificadas (Santa María Tepepan, Bosque Residencial del Sur y "
+                    "San Juan Tepepan) y valores enteros del 1 al 5."
+                )
+                plantilla_csv = generar_plantilla_nuevos_csv(incluir_ejemplo=True)
+                st.download_button(
+                    label="Descargar plantilla CSV de reportes nuevos",
+                    data=plantilla_csv,
+                    file_name="plantilla_nuevos_baches_xochimilco.csv",
+                    mime="text/csv",
+                    key="btn_descargar_plantilla_nuevos",
+                )
 
-            if archivo_csv is not None:
-                resultado_csv = validar_csv_reportes(archivo_csv.getvalue())
+                st.markdown("**2. Sube el archivo CSV completado**")
+                archivo_csv = st.file_uploader(
+                    "Sube el archivo CSV de reportes nuevos",
+                    type=["csv"],
+                    key="uploader_carga_csv_nuevos",
+                )
 
-                if resultado_csv["columnas_faltantes"]:
-                    st.error(
-                        "Al archivo le faltan columnas obligatorias: "
-                        + ", ".join(resultado_csv["columnas_faltantes"])
-                    )
-                else:
-                    filas_validas = resultado_csv["filas_validas"]
-                    errores = resultado_csv["errores"]
+                if archivo_csv is not None:
+                    resultado_csv = validar_csv_nuevos_reportes(archivo_csv.getvalue())
 
-                    col_v, col_e = st.columns(2)
-                    col_v.metric("Filas válidas", len(filas_validas))
-                    col_e.metric("Filas con error", len(errores))
-
-                    if filas_validas:
-                        st.markdown("**Vista previa de filas válidas listas para guardar**")
-                        st.dataframe(
-                            [
-                                {
-                                    "Fila CSV": item["fila_csv"],
-                                    "Colonia": item["datos"]["zona"],
-                                    "Ubicación": item["datos"]["ubicacion"],
-                                    "Tipo de vía": item["datos"]["tipo_via"],
-                                    "Tamaño": item["datos"]["tamanio"],
-                                    "Profundidad": item["datos"]["profundidad"],
-                                    "Riesgo vial": item["datos"]["riesgo_vial"],
-                                    "Tráfico": item["datos"]["trafico"],
-                                }
-                                for item in filas_validas
-                            ],
-                            width='stretch',
-                            hide_index=True,
+                    if resultado_csv["columnas_faltantes"]:
+                        st.error(
+                            "Al archivo le faltan columnas obligatorias: "
+                            + ", ".join(resultado_csv["columnas_faltantes"])
                         )
+                    else:
+                        filas_validas = resultado_csv["filas_validas"]
+                        errores = resultado_csv["errores"]
 
-                    if errores:
-                        st.markdown("**Filas con observaciones / errores (no se insertarán)**")
-                        st.dataframe(errores, width='stretch', hide_index=True)
+                        col_v, col_e = st.columns(2)
+                        col_v.metric("Filas válidas", len(filas_validas))
+                        col_e.metric("Filas con error", len(errores))
 
-                    if filas_validas and st.button(
-                        f"Importar {len(filas_validas)} reporte(s) válido(s)",
-                        type="primary",
-                        key="btn_importar_csv_admin",
-                    ):
-                        creados = importar_filas_validas(filas_validas)
-                        st.success(f"Se registraron {len(creados)} reporte(s) en la base de datos.")
-                        st.dataframe(creados, width='stretch', hide_index=True)
-                        st.rerun()
+                        if filas_validas:
+                            st.markdown("**Vista previa de filas válidas listas para guardar**")
+                            st.dataframe(
+                                [
+                                    {
+                                        "Fila CSV": item["fila_csv"],
+                                        "Canal": item["canal_origen"],
+                                        "Colonia": item["datos"]["zona"],
+                                        "Ubicación": item["datos"]["ubicacion"],
+                                        "Tipo de vía": item["datos"]["tipo_via"],
+                                        "Tamaño": item["datos"]["tamanio"],
+                                        "Profundidad": item["datos"]["profundidad"],
+                                        "Riesgo vial": item["datos"]["riesgo_vial"],
+                                        "Tráfico": item["datos"]["trafico"],
+                                    }
+                                    for item in filas_validas
+                                ],
+                                width='stretch',
+                                hide_index=True,
+                            )
+
+                        if errores:
+                            st.markdown("**Filas con observaciones / errores (no se insertarán)**")
+                            st.dataframe(errores, width='stretch', hide_index=True)
+
+                        if filas_validas and st.button(
+                            f"Importar {len(filas_validas)} reporte(s) nuevo(s)",
+                            type="primary",
+                            key="btn_importar_csv_nuevos",
+                        ):
+                            creados = importar_nuevos_reportes_csv(filas_validas)
+                            st.success(f"Se registraron {len(creados)} reporte(s) nuevo(s) en la base de datos.")
+                            st.dataframe(creados, width='stretch', hide_index=True)
+                            st.rerun()
+
+            with sub_ruta_csv:
+                st.markdown("**1. Obtén el CSV de ruta desde la pestaña *Ruta para cuadrillas***")
+                st.caption(
+                    "La cuadrilla llena en campo columnas como `nuevo_estado` (por ejemplo, `Reparado` o `Asignado`), "
+                    "medidas en cm (`largo_cm`, `ancho_cm`, `profundidad_cm`), `vehiculos_min`, `criterio_peligro` o `nota_campo`. "
+                    "Solo se actualizan folios existentes; no se crean reportes nuevos."
+                )
+
+                archivo_ruta_csv = st.file_uploader(
+                    "Sube el archivo CSV de ruta completado por la cuadrilla",
+                    type=["csv"],
+                    key="uploader_carga_csv_ruta",
+                )
+
+                if archivo_ruta_csv is not None:
+                    res_ruta = validar_csv_actualizacion_ruta(archivo_ruta_csv.getvalue())
+
+                    if res_ruta["columnas_faltantes"]:
+                        st.error(
+                            "Al archivo le falta la columna obligatoria: "
+                            + ", ".join(res_ruta["columnas_faltantes"])
+                        )
+                    else:
+                        validas_ruta = res_ruta["actualizaciones_validas"]
+                        errores_ruta = res_ruta["errores"]
+
+                        col_rv, col_re = st.columns(2)
+                        col_rv.metric("Actualizaciones válidas", len(validas_ruta))
+                        col_re.metric("Filas con error", len(errores_ruta))
+
+                        if validas_ruta:
+                            st.markdown("**Vista previa de folios existentes a actualizar**")
+                            st.dataframe(
+                                [
+                                    {
+                                        "Fila CSV": item["fila_csv"],
+                                        "Folio": item["folio"],
+                                        "Colonia": item["zona"],
+                                        "Ubicación": item["ubicacion"],
+                                        "Nuevo estado": item["nuevo_estado"] or "(sin cambio)",
+                                        "Actualiza medidas": "Sí" if item["medicion"] is not None else "No",
+                                        "Nota": item["nota_campo"] or "—",
+                                    }
+                                    for item in validas_ruta
+                                ],
+                                width='stretch',
+                                hide_index=True,
+                            )
+
+                        if errores_ruta:
+                            st.markdown("**Filas con observaciones / errores (no se aplicarán)**")
+                            st.dataframe(errores_ruta, width='stretch', hide_index=True)
+
+                        if validas_ruta and st.button(
+                            f"Aplicar {len(validas_ruta)} actualización(es) a la base de datos",
+                            type="primary",
+                            key="btn_aplicar_csv_ruta",
+                        ):
+                            aplicados = aplicar_actualizaciones_ruta_csv(validas_ruta, operador_actual)
+                            st.success(f"Se actualizaron {len(aplicados)} folio(s) en la base de datos.")
+                            st.dataframe(aplicados, width='stretch', hide_index=True)
+                            st.rerun()
                         
 st.markdown("---")
 st.markdown(
