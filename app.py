@@ -863,14 +863,14 @@ else:
                             st.success(f"Se actualizaron {len(aplicados)} folio(s) en la base de datos.")
                             st.dataframe(aplicados, width='stretch', hide_index=True)
                             st.rerun()
-                        
+                            
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #888888; font-size: 0.85em; padding-top: 20px;'>"
-    "© 2026 Proyecto Académico de Ciencia de Datos (CDMX). — Bacheo Inteligente<br>"
+    "© 2026 Proyecto Académico de Ciencia de Datos (CDMX) · Bacheo Inteligente<br>"
     "Licenciatura en Ciencia de Datos para Negocios | Universidad Nacional Rosario Castellanos<br>"
     "Unidad Académica Magdalena Contreras<br><br>"
-    "<b>Autores:</b> Martinez Ventura Andrea, Gonzalez Manriquez Jose Fernando, "
+    "<b>Autores:</b> Martínez Ventura Andrea, González Manríquez José Fernando y "
     "Sánchez Flores Brandon."
     "</div>",
     unsafe_allow_html=True
