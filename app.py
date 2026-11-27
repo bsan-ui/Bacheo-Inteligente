@@ -641,12 +641,20 @@ else:
                 m_ins4.metric("Gasto estimado", f"${estimacion['costo_estimado']:,.2f} MXN", f"Nivel Tráfico: {trafico_nuevo}/5")
 
                 st.caption(
+                    f"Referencia bacheo superficial ($400–$500 MXN/m², ref. $450/m²): "
+                    f"**${estimacion['costo_superficial_ref']:,.2f} MXN** "
+                    f"(rango ${estimacion['costo_superficial_min']:,.2f} – ${estimacion['costo_superficial_max']:,.2f} MXN) · "
+                    f"Referencia daño vehicular: **${estimacion['referencia_dano_vehicular']:,.2f} MXN** · "
+                    f"Valor esperado ilustrativo (NIF C-9): **${estimacion['valor_esperado_caso']:,.2f} MXN/caso**."
+                )
+
+                st.caption(
                     "Nota de cálculo y costos: el volumen, peso y costales son estimaciones técnicas "
-                    "(incluyendo 15 % de compactación/merma). Los montos por tonelada, el tabulador "
-                    "superficial ($400–$500 MXN/m², ref. $450/m²), la referencia de daño vehicular "
-                    "(~$7,000 MXN) y el valor esperado ilustrativo bajo NIF C-9 ($925/caso) son "
-                    "referenciales para apoyo a la decisión; no sustituyen presupuestos oficiales ni "
-                    "constituyen provisión contable reconocida en balance."
+                    "(incluyendo 15 % de compactación/merma y densidad de 2,350 kg/m³). Los montos "
+                    "por tonelada, el tabulador superficial, la alerta estructural (≥ 10 cm, criterio SOBSE), "
+                    "el daño vehicular y el valor esperado NIF C-9 son valores referenciales e ilustrativos "
+                    "para apoyo a la decisión; no sustituyen presupuestos oficiales ni constituyen provisión "
+                    "contable reconocida en balance."
                 )
 
                 if estimacion["posible_dano_estructural"]:
