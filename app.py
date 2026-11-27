@@ -290,8 +290,9 @@ if pagina == "Portal ciudadano":
         folio_consulta = st.text_input("Ingresa tu número de folio", placeholder="Ej. B-XXXXXXXX", key="folio_publico")
         if st.button("Consultar folio", key="btn_consultar"):
             bache = consultar_reporte(folio_consulta)
-            if bache and bache.estado == "Reparado":
-                st.success("✅ Este bache ya fue atendido y marcado como **Reparado**.")
+            if bache:
+                if bache.estado == "Reparado":
+                    st.success("✅ Este bache ya fue atendido y marcado como **Reparado**.")
                 st.write(f"**Ubicación:** {bache.ubicacion} · **Colonia:** {bache.zona}")
                 tiene_agua = "[Red hidráulica/drenaje]" in bache.descripcion
                 riesgo_72h = estimar_riesgo_72h(
