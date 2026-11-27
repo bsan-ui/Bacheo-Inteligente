@@ -292,7 +292,7 @@ if pagina == "Portal ciudadano":
             bache = consultar_reporte(folio_consulta)
             if bache and bache.estado == "Reparado":
                 st.success("✅ Este bache ya fue atendido y marcado como **Reparado**.")
-            st.write(f"**Ubicación:** {bache.ubicacion} · **Colonia:** {bache.zona}")
+                st.write(f"**Ubicación:** {bache.ubicacion} · **Colonia:** {bache.zona}")
                 tiene_agua = "[Red hidráulica/drenaje]" in bache.descripcion
                 riesgo_72h = estimar_riesgo_72h(
                     bache.tamanio,
