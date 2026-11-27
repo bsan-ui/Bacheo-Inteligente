@@ -324,7 +324,7 @@ if pagina == "Portal ciudadano":
             "reportes ciudadanos dispersos en rutas de mantenimiento vial priorizadas mediante Ciencia de Datos."
         )
 
-        col_info1, col_info2, col_info = st.columns(3)
+        col_info1, col_info2, col_info3 = st.columns(3)
         with col_info1:
             st.markdown(r"""
             **1. ¿Cómo se calcula la urgencia (0 a 100)?**
