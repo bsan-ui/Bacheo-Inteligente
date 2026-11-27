@@ -3,7 +3,6 @@ import pandas as pd
 
 
 def integrar_trapecio(funcion, a, b, n=100):
-    """Calcula la integral definida de 'funcion' en [a, b] con n trapecios."""
     if b <= a:
         return 0.0
     base = (b - a) / float(n)
@@ -15,7 +14,6 @@ def integrar_trapecio(funcion, a, b, n=100):
 
 
 def probabilidad_nuevo_bache(profundidad, trafico, tiene_red_hidraulica=False, dias=30):
-    """Integra la densidad exponencial f(x) = lambda * e^(-lambda * x) de 0 a 'dias'."""
     norm_prof = (profundidad - 1) / 4.0
     norm_traf = (trafico - 1) / 4.0
     extra_agua = 0.03 if tiene_red_hidraulica else 0.0
@@ -30,7 +28,6 @@ def probabilidad_nuevo_bache(profundidad, trafico, tiene_red_hidraulica=False, d
 
 
 def probabilidad_accidente_horario(tamanio, profundidad, riesgo_vial, trafico, hora_inicio=6, hora_fin=22):
-    """Integra la función de riesgo horario entre hora_inicio y hora_fin."""
     severidad = (
         0.15 * ((tamanio - 1) / 4.0) +
         0.35 * ((profundidad - 1) / 4.0) +
@@ -50,7 +47,6 @@ def probabilidad_accidente_horario(tamanio, profundidad, riesgo_vial, trafico, h
 
 
 def curva_riesgo_24h(tamanio, profundidad, riesgo_vial, trafico, factor_trafico=1.0):
-    """Genera un DataFrame hora por hora (0 a 24 h) con estimación paramétrica para graficar el área."""
     severidad = (
         0.15 * ((tamanio - 1) / 4.0)
         + 0.35 * ((profundidad - 1) / 4.0)
@@ -85,7 +81,6 @@ def estimar_riesgo_72h(
     tiene_agua=False,
     factor_ajuste=1.0,
 ):
-    """Estimación paramétrica (0–100 %) de riesgo acumulado a 72 horas (3 días)."""
     t_norm = max(1.0, min(5.0, float(tamanio))) / 5.0
     p_norm = max(1.0, min(5.0, float(profundidad))) / 5.0
     r_norm = max(1.0, min(5.0, float(riesgo_vial))) / 5.0
