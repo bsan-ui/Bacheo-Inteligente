@@ -538,7 +538,7 @@ else:
                             )
                             .interactive()
                         )
-                        st.altair_chart(dispersion_chart, use_container_width=True)
+                        st.altair_chart(dispersion_chart, width='stretch')
 
                 with sub_resumen:
                     st.markdown("**Resumen por prioridad y estado**")
