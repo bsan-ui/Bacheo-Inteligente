@@ -49,20 +49,32 @@ def probabilidad_accidente_horario(tamanio, profundidad, riesgo_vial, trafico, h
     return round(probabilidad * 100, 2)
 
 
-def curva_riesgo_24h(tamanio, profundidad, riesgo_vial, trafico):
-    """Genera un DataFrame hora por hora (0 a 24 h) para graficar el área bajo la curva."""
+def curva_riesgo_24h(tamanio, profundidad, riesgo_vial, trafico, factor_trafico=1.0):
+    """Genera un DataFrame hora por hora (0 a 24 h) con estimación paramétrica para graficar el área."""
     severidad = (
-        0.15 * ((tamanio - 1) / 4.0) +
-        0.35 * ((profundidad - 1) / 4.0) +
-        0.35 * ((riesgo_vial - 1) / 4.0) +
-        0.15 * ((trafico - 1) / 4.0)
+        0.15 * ((tamanio - 1) / 4.0)
+        + 0.35 * ((profundidad - 1) / 4.0)
+        + 0.35 * ((riesgo_vial - 1) / 4.0)
+        + 0.15 * ((trafico - 1) / 4.0)
     )
+
+    f_traf = 0.85 + 0.15 * ((trafico - 1) / 2.0)
+    f_traf = max(0.75, min(1.25, f_traf * float(factor_trafico)))
+
     datos = []
     for hora in range(0, 25):
-        pico_m = math.exp(-0.5 * ((hora - 8.0) / 1.5) ** 2)
-        pico_t = math.exp(-0.5 * ((hora - 19.0) / 2.0) ** 2)
-        tasa = 100 * (0.018 * severidad * (0.2 + 0.8 * max(pico_m, pico_t)))
-        datos.append({"Hora del día": hora, "Índice de riesgo instantáneo f(t)": round(tasa, 2)})
+        pico_m = math.exp(-0.5 * ((hora - 8.5) / 1.8) ** 2)
+        pico_t = math.exp(-0.5 * ((hora - 18.5) / 2.2) ** 2)
+        peso_diurno = 1.0 if 6 <= hora <= 21 else 0.45
+
+        intensidad = (0.10 * peso_diurno) + (0.58 * pico_m) + (0.52 * pico_t) + 0.06
+        tasa = 100.0 * (0.018 * severidad * intensidad * f_traf)
+
+        datos.append({
+            "Hora del día": hora,
+            "Índice de riesgo instantáneo f(t)": round(tasa, 2),
+        })
+
     return pd.DataFrame(datos).set_index("Hora del día")
 
 def estimar_riesgo_72h(
