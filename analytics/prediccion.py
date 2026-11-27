@@ -64,3 +64,25 @@ def curva_riesgo_24h(tamanio, profundidad, riesgo_vial, trafico):
         tasa = 100 * (0.018 * severidad * (0.2 + 0.8 * max(pico_m, pico_t)))
         datos.append({"Hora del día": hora, "Índice de riesgo instantáneo f(t)": round(tasa, 2)})
     return pd.DataFrame(datos).set_index("Hora del día")
+
+def estimar_riesgo_72h(
+    tamanio,
+    profundidad,
+    riesgo_vial,
+    trafico,
+    tiene_agua=False,
+    factor_ajuste=1.0,
+):
+    """Estimación paramétrica (0–100 %) de riesgo acumulado a 72 horas (3 días)."""
+    t_norm = max(1.0, min(5.0, float(tamanio))) / 5.0
+    p_norm = max(1.0, min(5.0, float(profundidad))) / 5.0
+    r_norm = max(1.0, min(5.0, float(riesgo_vial))) / 5.0
+    v_norm = max(1.0, min(5.0, float(trafico))) / 5.0
+
+    indice_base = (0.35 * r_norm) + (0.30 * p_norm) + (0.20 * v_norm) + (0.15 * t_norm)
+    if tiene_agua:
+        indice_base = min(1.0, indice_base + 0.08)
+
+    factor_exposicion_xoch = 1.05
+    riesgo_72h = indice_base * 60.0 * factor_exposicion_xoch * float(factor_ajuste)
+    return round(max(1.0, min(100.0, riesgo_72h)), 1)
