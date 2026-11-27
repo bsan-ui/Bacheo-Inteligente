@@ -859,9 +859,9 @@ else:
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #888888; font-size: 0.85em; padding-top: 20px;'>"
-    "© 2026 Proyecto Académico de Ciencia de Datos (CDMX). — Bacheo inteligente<br>"
-    "Licenciatura en ciencia de datos para negocios | Universidad Nacional Rosario Castellanos<br>"
-    "Unidad académica Magdalena Contreras<br><br>"
+    "© 2026 Proyecto Académico de Ciencia de Datos (CDMX). — Bacheo Inteligente<br>"
+    "Licenciatura en Ciencia de Datos para Negocios | Universidad Nacional Rosario Castellanos<br>"
+    "Unidad Académica Magdalena Contreras<br><br>"
     "<b>Autores:</b> Martinez Ventura Andrea, Gonzalez Manriquez Jose Fernando, "
     "Sánchez Flores Brandon."
     "</div>",
