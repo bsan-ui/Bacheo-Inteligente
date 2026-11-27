@@ -292,36 +292,38 @@ if pagina == "Portal ciudadano":
             bache = consultar_reporte(folio_consulta)
             if bache and bache.estado == "Reparado":
                 st.success("✅ Este bache ya fue atendido y marcado como **Reparado**.")
-            elif bache:
-                st.write(f"**Ubicación:** {bache.ubicacion} · **Colonia:** {bache.zona}")
-                 tiene_agua = "[Red hidráulica/drenaje]" in bache.descripcion
-                 riesgo_72h = estimar_riesgo_72h(
-                     bache.tamanio,
-                     bache.profundidad,
-                     bache.riesgo_vial,
-                     bache.trafico,
-                     tiene_agua,
-                 )
-                 prob_bache = probabilidad_nuevo_bache(bache.profundidad, bache.trafico, tiene_agua, dias=30)
-                 prob_acc = probabilidad_accidente_horario(bache.tamanio, bache.profundidad, bache.riesgo_vial, bache.trafico, 6, 22)
-    
-                 c_m1, c_m2, c_m3, c_m4 = st.columns(4)
-                 c_m1.metric("Urgencia asignada", f"{bache.puntuacion}/100 ({bache.nivel})")
-                 c_m2.metric("Riesgo estimado (72 h)", f"{riesgo_72h} %")
-                 c_m3.metric("Riesgo de expansión (30 días)", f"{prob_bache} %")
-                 c_m4.metric("Probabilidad de incidente (6:00–22:00 h)", f"{prob_acc} %")
-    
-                 st.markdown("**Comportamiento del riesgo vial a lo largo del día**")
-                 st.caption("El área sombreada representa el riesgo acumulado conforme varía el flujo vehicular entre las 0:00 y las 24:00 horas.")
-                 df_curva = curva_riesgo_24h(bache.tamanio, bache.profundidad, bache.riesgo_vial, bache.trafico)
-                 st.area_chart(df_curva)
-                 st.caption(
-                     "Nota metodológica: el índice de urgencia (0–100), la estimación a 72 h, las "
-                     "probabilidades y la curva de 24 h son estimaciones paramétricas calculadas a partir "
-                     "de las variables registradas y los parámetros configurados en el prototipo (con "
-                     "referencia contextual ATUS 2025 para Xochimilco); tienen fines orientativos y académicos."
-                 )
+            st.write(f"**Ubicación:** {bache.ubicacion} · **Colonia:** {bache.zona}")
+                tiene_agua = "[Red hidráulica/drenaje]" in bache.descripcion
+                riesgo_72h = estimar_riesgo_72h(
+                    bache.tamanio,
+                    bache.profundidad,
+                    bache.riesgo_vial,
+                    bache.trafico,
+                    tiene_agua,
+                )
+                prob_bache = probabilidad_nuevo_bache(bache.profundidad, bache.trafico, tiene_agua, dias=30)
+                prob_acc = probabilidad_accidente_horario(bache.tamanio, bache.profundidad, bache.riesgo_vial, bache.trafico, 6, 22)
 
+                c_m1, c_m2, c_m3, c_m4 = st.columns(4)
+                c_m1.metric("Urgencia asignada", f"{bache.puntuacion}/100 ({bache.nivel})")
+                c_m2.metric("Riesgo estimado (72 h)", f"{riesgo_72h} %")
+                c_m3.metric("Riesgo de expansión (30 días)", f"{prob_bache} %")
+                c_m4.metric("Probabilidad de incidente (6:00–22:00 h)", f"{prob_acc} %")
+
+                st.markdown("**Comportamiento del riesgo vial a lo largo del día (curva de 24 h)**")
+                st.caption(
+                    "El área bajo la curva muestra la estimación paramétrica del riesgo instantáneo "
+                    "hora por hora (0 a 24 h) según severidad, tráfico y perfil horario diurno/vespertino "
+                    "(en Xochimilco, el 80.0 % de los registros ATUS 2025 ocurren entre las 6:00 y 21:59 h)."
+                )
+                df_curva = curva_riesgo_24h(bache.tamanio, bache.profundidad, bache.riesgo_vial, bache.trafico)
+                st.area_chart(df_curva)
+                st.caption(
+                    "Nota metodológica: el índice de urgencia (0–100), la estimación a 72 h (3 días), "
+                    "las probabilidades y la curva de 24 h son estimaciones paramétricas calculadas a partir "
+                    "de las variables registradas y los parámetros del prototipo (con contexto referencial "
+                    "ATUS-INEGI 2025 para Xochimilco); tienen fines orientativos y académicos."
+                )
                 st.subheader("Historial de atención")
                 mostrar_historial(obtener_historial(bache.folio))
             else:
@@ -349,17 +351,17 @@ if pagina == "Portal ciudadano":
         with col_info2:
             st.markdown("""
             **2. Modelado Matemático y Estructuras**
-            * **Cálculo Integral (Regla del Trapecio):** Estima el riesgo acumulado de incidente vial entre las 6:00 y 22:00 h integrando la curva de flujo horario, así como la probabilidad de expansión del daño a 30 días.
-            * **Listas Simplemente Enlazadas:** Organiza las paradas de cada cuadrilla por colonia enlazando cada reporte activo con el siguiente nodo de mayor urgencia.
-            * **Inspección Técnica y Material:** En campo, el personal captura medidas reales en centímetros para calcular mezcla asfáltica y costo estimado.
-            * **Persistencia Relacional:** Base de datos en la nube con auditoría histórica de estados y reevaluaciones.
+- **Cálculo Integral y Ventanas Temporales:** Estima el riesgo acumulado de incidente vial entre las 6:00 y 22:00 h integrando la curva horaria de 24 h, calcula una estimación paramétrica a 72 horas (3 días) y proyecta la probabilidad de expansión del daño a 30 días.
+- **Listas Simplemente Enlazadas:** Organiza las paradas de cada cuadrilla por colonia enlazando cada reporte activo con el siguiente nodo de mayor urgencia (sobre el orden de consulta).
+- **Inspección Técnica y Material:** En campo, el personal captura medidas reales en centímetros para calcular mezcla asfáltica y costo estimado.
+- **Persistencia Relacional:** Base de datos en la nube con auditoría histórica de estados y reevaluaciones.
             """)
         with col_info3:
-            st.markdown("""
+            st.markdown(r"""
             **3. Alcance de índices, estimaciones paramétricas y referencias**
-            - **Índice de urgencia (0–100):** Indicador paramétrico ponderado según criterios y pesos definidos en el prototipo (incluyendo la regla crítica de emergencia).
-            - **Estimaciones y curvas de riesgo:** Cálculos paramétricos y numéricos ilustrativos a partir de las entradas del reporte y parámetros del modelo; no representan predicciones actuariales ni mediciones empíricas de siniestralidad.
-            - **Costos y valores referenciales:** Tanto el cálculo de insumos como las referencias de bacheo superficial ($400–$500 MXN/m², ref. $450/m²), criterio estructural SOBSE ($\ge 10\text{ cm}$), daño vehicular (~$7,000 MXN) y valor esperado ilustrativo NIF C-9 ($925/caso) son orientativos y de análisis, no cifras presupuestales o contables oficiales.
+- **Índice de urgencia (0–100):** Indicador paramétrico ponderado según criterios y pesos definidos en el prototipo (incluyendo la regla crítica de emergencia).
+- **Estimación a 72 h, probabilidades y curva de 24 h:** Cálculos paramétricos y numéricos ilustrativos a partir de las entradas del reporte y parámetros del modelo (apoyados en contexto descriptivo de ATUS-INEGI 2025 para Xochimilco); no sustituyen modelos actuariales ni atribuyen causalidad directa por baches.
+- **Costos y valores referenciales:** Tanto el cálculo de insumos como las referencias de bacheo superficial ($400–$500 MXN/m², ref. $450/m²), criterio estructural SOBSE ($\ge 10\text{ cm}$), daño vehicular (~$7,000 MXN) y valor esperado ilustrativo NIF C-9 ($925/caso) son orientativos y de análisis, no cifras presupuestales o contables oficiales.
             """)
 
         st.warning(
