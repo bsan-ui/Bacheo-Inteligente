@@ -44,8 +44,23 @@ from security.auth import verificar_admin
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+COLORES_PRIORIDAD_TEXTO = {
+    "Emergencia": "color: #C62828; font-weight: 600;",
+    "Prioridad alta": "color: #EF6C00; font-weight: 600;",
+    "Prioridad media": "color: #C79100; font-weight: 600;",
+    "Prioridad baja": "color: #1565C0; font-weight: 600;",
+    "En revisión": "color: #546E7A; font-weight: 600;",
+}
 
-def mostrar_tabla_baches(df):
+def estilizar_columna_prioridad(df, columna="Nivel de prioridad"):
+    if columna not in df.columns:
+        return df
+    return df.style.map(
+        lambda val: COLORES_PRIORIDAD_TEXTO.get(str(val), ""),
+        subset=[columna],
+    )
+
+def mostrar_tabla_baches(df, aplicar_semaforo=False):
     nombres = {
         "folio": "Folio",
         "ubicacion": "Calle o avenida",
@@ -63,20 +78,12 @@ def mostrar_tabla_baches(df):
     }
     df_mostrado = df.rename(columns=nombres).copy()
 
-    colores_texto = {
-        "Emergencia": "color: #C62828; font-weight: 600;",
-        "Prioridad alta": "color: #EF6C00; font-weight: 600;",
-        "Prioridad media": "color: #C79100; font-weight: 600;",
-        "Prioridad baja": "color: #1565C0; font-weight: 600;",
-        "En revisión": "color: #546E7A; font-weight: 600;",
-    }
-
-    if "Nivel de prioridad" in df_mostrado.columns:
-        estilo = df_mostrado.style.map(
-            lambda val: colores_texto.get(str(val), ""),
-            subset=["Nivel de prioridad"],
+    if aplicar_semaforo and "Nivel de prioridad" in df_mostrado.columns:
+        st.dataframe(
+            estilizar_columna_prioridad(df_mostrado, "Nivel de prioridad"),
+            width="stretch",
+            hide_index=True,
         )
-        st.dataframe(estilo, width="stretch", hide_index=True)
     else:
         st.dataframe(df_mostrado, width="stretch", hide_index=True)
 
@@ -237,7 +244,12 @@ if pagina == "Portal ciudadano":
                 "Prioridad": d.nivel,
                 "Estado actual": d.estado
             } for d in duplicados]
-            st.dataframe(filas_dup, width='stretch', hide_index=True)
+            df_dup = pd.DataFrame(filas_dup)
+            st.dataframe(
+                estilizar_columna_prioridad(df_dup, "Prioridad"),
+                width="stretch",
+                hide_index=True,
+            )
             forzar_registro = st.checkbox(
                 "Es un bache distinto en la misma calle y deseo generar un nuevo reporte."
             )
@@ -441,7 +453,7 @@ else:
                         | df_filtrado["ubicacion"].astype(str).str.lower().str.contains(filtro_texto, na=False)
                     ]
 
-                mostrar_tabla_baches(df_filtrado)
+                mostrar_tabla_baches(df_filtrado, aplicar_semaforo=True)
 
                 st.divider()
 
