@@ -61,7 +61,24 @@ def mostrar_tabla_baches(df):
         "estado": "Estado actual",
         "nota_estado": "Última actualización",
     }
-    st.dataframe(df.rename(columns=nombres), width='stretch', hide_index=True)
+    df_mostrado = df.rename(columns=nombres).copy()
+
+    colores_texto = {
+        "Emergencia": "color: #C62828; font-weight: 600;",
+        "Prioridad alta": "color: #EF6C00; font-weight: 600;",
+        "Prioridad media": "color: #C79100; font-weight: 600;",
+        "Prioridad baja": "color: #1565C0; font-weight: 600;",
+        "En revisión": "color: #546E7A; font-weight: 600;",
+    }
+
+    if "Nivel de prioridad" in df_mostrado.columns:
+        estilo = df_mostrado.style.map(
+            lambda val: colores_texto.get(str(val), ""),
+            subset=["Nivel de prioridad"],
+        )
+        st.dataframe(estilo, width="stretch", hide_index=True)
+    else:
+        st.dataframe(df_mostrado, width="stretch", hide_index=True)
 
 def formatear_fecha_legible(valor_fecha):
     if not valor_fecha:
