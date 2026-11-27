@@ -306,6 +306,11 @@ if pagina == "Portal ciudadano":
                 st.caption("El área sombreada representa el riesgo acumulado conforme varía el flujo vehicular entre las 0:00 y las 24:00 horas.")
                 df_curva = curva_riesgo_24h(bache.tamanio, bache.profundidad, bache.riesgo_vial, bache.trafico)
                 st.area_chart(df_curva)
+                st.caption(
+                    "Nota metodológica: el índice de urgencia (0–100), las probabilidades y la curva de 24 h "
+                    "son estimaciones paramétricas calculadas a partir de las variables registradas y los "
+                    "parámetros configurados en el prototipo; tienen fines orientativos y académicos."
+                )
 
                 st.subheader("Historial de atención")
                 mostrar_historial(obtener_historial(bache.folio))
@@ -319,7 +324,7 @@ if pagina == "Portal ciudadano":
             "reportes ciudadanos dispersos en rutas de mantenimiento vial priorizadas mediante Ciencia de Datos."
         )
 
-        col_info1, col_info2 = st.columns(2)
+        col_info1, col_info2, col_info = st.columns(3)
         with col_info1:
             st.markdown(r"""
             **1. ¿Cómo se calcula la urgencia (0 a 100)?**
@@ -338,6 +343,13 @@ if pagina == "Portal ciudadano":
             * **Listas Simplemente Enlazadas:** Organiza las paradas de cada cuadrilla por colonia enlazando cada reporte activo con el siguiente nodo de mayor urgencia.
             * **Inspección Técnica y Material:** En campo, el personal captura medidas reales en centímetros para calcular mezcla asfáltica y costo estimado.
             * **Persistencia Relacional:** Base de datos en la nube con auditoría histórica de estados y reevaluaciones.
+            """)
+        with col_info3:
+            st.markdown("""
+            **3. Alcance de índices, estimaciones paramétricas y referencias**
+            - **Índice de urgencia (0–100):** Indicador paramétrico ponderado según criterios y pesos definidos en el prototipo (incluyendo la regla crítica de emergencia).
+            - **Estimaciones y curvas de riesgo:** Cálculos paramétricos y numéricos ilustrativos a partir de las entradas del reporte y parámetros del modelo; no representan predicciones actuariales ni mediciones empíricas de siniestralidad.
+            - **Costos y valores referenciales:** Tanto el cálculo de insumos como las referencias de bacheo superficial ($400–$500 MXN/m², ref. $450/m²), criterio estructural SOBSE ($\ge 10\text{ cm}$), daño vehicular (~$7,000 MXN) y valor esperado ilustrativo NIF C-9 ($925/caso) son orientativos y de análisis, no cifras presupuestales o contables oficiales.
             """)
 
         st.warning(
@@ -385,13 +397,11 @@ else:
             if df.empty:
                 st.info("Por el momento no hay reportes pendientes de atención.")
             else:
-                # 1. KPIs superiores
                 col_m1, col_m2, col_m3 = st.columns(3)
                 col_m1.metric("Reportes activos", len(df))
                 col_m2.metric("Casos en Emergencia", int((df["nivel"] == "Emergencia").sum()))
                 col_m3.metric("Urgencia promedio", f"{df['puntuacion'].mean():.1f}/100")
 
-                # 2. Operación rápida siempre visible
                 with st.container(border=True):
                     st.subheader("Actualizar estado de atención")
                     c_est1, c_est2 = st.columns(2)
@@ -423,7 +433,6 @@ else:
 
                 st.divider()
 
-                # 3. Listado general siempre visible con filtros
                 st.markdown("**Listado general de reportes por atender**")
                 f_col1, f_col2, f_col3 = st.columns(3)
                 filtro_zona = f_col1.selectbox(
@@ -457,7 +466,6 @@ else:
 
                 st.divider()
 
-                # 4. Gráficas y resumen en pestaña interna
                 sub_graficas, sub_resumen = st.tabs([
                     "📈 Gráficas de urgencia",
                     "📑 Resumen por prioridad y estado",
@@ -633,11 +641,12 @@ else:
                 m_ins4.metric("Gasto estimado", f"${estimacion['costo_estimado']:,.2f} MXN", f"Nivel Tráfico: {trafico_nuevo}/5")
 
                 st.caption(
-                    f"Referencia bacheo superficial ($400–$500 MXN/m², ref. $450/m²): "
-                    f"**${estimacion['costo_superficial_ref']:,.2f} MXN** "
-                    f"(rango ${estimacion['costo_superficial_min']:,.2f} – ${estimacion['costo_superficial_max']:,.2f} MXN) · "
-                    f"Referencia daño vehicular: **${estimacion['referencia_dano_vehicular']:,.2f} MXN** · "
-                    f"Valor esperado ilustrativo (NIF C-9): **${estimacion['valor_esperado_caso']:,.2f} MXN/caso**."
+                    "Nota de cálculo y costos: el volumen, peso y costales son estimaciones técnicas "
+                    "(incluyendo 15 % de compactación/merma). Los montos por tonelada, el tabulador "
+                    "superficial ($400–$500 MXN/m², ref. $450/m²), la referencia de daño vehicular "
+                    "(~$7,000 MXN) y el valor esperado ilustrativo bajo NIF C-9 ($925/caso) son "
+                    "referenciales para apoyo a la decisión; no sustituyen presupuestos oficiales ni "
+                    "constituyen provisión contable reconocida en balance."
                 )
 
                 if estimacion["posible_dano_estructural"]:
