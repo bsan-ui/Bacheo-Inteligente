@@ -40,6 +40,7 @@ from analytics.prediccion import (
     probabilidad_nuevo_bache,
     probabilidad_accidente_horario,
     curva_riesgo_24h,
+    estimar_riesgo_72h,
 )
 from models.lista_enlazada import ListaEnlazadaRuta
 from security.auth import verificar_admin
@@ -293,24 +294,33 @@ if pagina == "Portal ciudadano":
                 st.success("✅ Este bache ya fue atendido y marcado como **Reparado**.")
             elif bache:
                 st.write(f"**Ubicación:** {bache.ubicacion} · **Colonia:** {bache.zona}")
-                tiene_agua = "[Red hidráulica/drenaje]" in bache.descripcion
-                prob_bache = probabilidad_nuevo_bache(bache.profundidad, bache.trafico, tiene_agua, dias=30)
-                prob_acc = probabilidad_accidente_horario(bache.tamanio, bache.profundidad, bache.riesgo_vial, bache.trafico, 6, 22)
-
-                c_m1, c_m2, c_m3 = st.columns(3)
-                c_m1.metric("Urgencia asignada", f"{bache.puntuacion}/100 ({bache.nivel})")
-                c_m2.metric("Riesgo de expansión o nuevo bache (30 días)", f"{prob_bache} %")
-                c_m3.metric("Probabilidad de incidente vial (6:00 a 22:00 h)", f"{prob_acc} %")
-
-                st.markdown("**Comportamiento del riesgo vial a lo largo del día**")
-                st.caption("El área sombreada representa el riesgo acumulado conforme varía el flujo vehicular entre las 0:00 y las 24:00 horas.")
-                df_curva = curva_riesgo_24h(bache.tamanio, bache.profundidad, bache.riesgo_vial, bache.trafico)
-                st.area_chart(df_curva)
-                st.caption(
-                    "Nota metodológica: el índice de urgencia (0–100), las probabilidades y la curva de 24 h "
-                    "son estimaciones paramétricas calculadas a partir de las variables registradas y los "
-                    "parámetros configurados en el prototipo; tienen fines orientativos y académicos."
-                )
+                 tiene_agua = "[Red hidráulica/drenaje]" in bache.descripcion
+                 riesgo_72h = estimar_riesgo_72h(
+                     bache.tamanio,
+                     bache.profundidad,
+                     bache.riesgo_vial,
+                     bache.trafico,
+                     tiene_agua,
+                 )
+                 prob_bache = probabilidad_nuevo_bache(bache.profundidad, bache.trafico, tiene_agua, dias=30)
+                 prob_acc = probabilidad_accidente_horario(bache.tamanio, bache.profundidad, bache.riesgo_vial, bache.trafico, 6, 22)
+    
+                 c_m1, c_m2, c_m3, c_m4 = st.columns(4)
+                 c_m1.metric("Urgencia asignada", f"{bache.puntuacion}/100 ({bache.nivel})")
+                 c_m2.metric("Riesgo estimado (72 h)", f"{riesgo_72h} %")
+                 c_m3.metric("Riesgo de expansión (30 días)", f"{prob_bache} %")
+                 c_m4.metric("Probabilidad de incidente (6:00–22:00 h)", f"{prob_acc} %")
+    
+                 st.markdown("**Comportamiento del riesgo vial a lo largo del día**")
+                 st.caption("El área sombreada representa el riesgo acumulado conforme varía el flujo vehicular entre las 0:00 y las 24:00 horas.")
+                 df_curva = curva_riesgo_24h(bache.tamanio, bache.profundidad, bache.riesgo_vial, bache.trafico)
+                 st.area_chart(df_curva)
+                 st.caption(
+                     "Nota metodológica: el índice de urgencia (0–100), la estimación a 72 h, las "
+                     "probabilidades y la curva de 24 h son estimaciones paramétricas calculadas a partir "
+                     "de las variables registradas y los parámetros configurados en el prototipo (con "
+                     "referencia contextual ATUS 2025 para Xochimilco); tienen fines orientativos y académicos."
+                 )
 
                 st.subheader("Historial de atención")
                 mostrar_historial(obtener_historial(bache.folio))
