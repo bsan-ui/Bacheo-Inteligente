@@ -41,6 +41,8 @@ from analytics.prediccion import (
 )
 from models.lista_enlazada import ListaEnlazadaRuta
 from security.auth import verificar_admin
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 
 def mostrar_tabla_baches(df):
@@ -61,7 +63,18 @@ def mostrar_tabla_baches(df):
     }
     st.dataframe(df.rename(columns=nombres), width='stretch', hide_index=True)
 
-
+def formatear_fecha_legible(valor_fecha):
+    if not valor_fecha:
+        return "Sin fecha"
+    texto = str(valor_fecha).strip()
+    try:
+        dt = datetime.fromisoformat(texto)
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(ZoneInfo("America/Mexico_City"))
+        return dt.strftime("%d/%m/%Y %H:%M")
+    except ValueError:
+        return texto
+        
 def mostrar_historial(historial):
     if not historial:
         st.info("Aún no hay movimientos registrados para este reporte.")
@@ -69,7 +82,7 @@ def mostrar_historial(historial):
     filas = []
     for h in historial:
         filas.append({
-            "Fecha": h.fecha,
+            "Fecha": formatear_fecha_legible(h.fecha),
             "Estado": h.estado,
             "Observación": h.nota or "Sin comentarios",
             "Responsable": "Personal operativo" if h.operador and h.operador != "sistema-demo" else "Sistema",
@@ -84,7 +97,7 @@ def mostrar_historial_prioridad(historial_prioridad):
     filas = []
     for h in historial_prioridad:
         filas.append({
-            "Fecha": h.fecha,
+            "Fecha": formatear_fecha_legible(h.fecha),
             "Índice de urgencia (0–100)": h.puntuacion,
             "Prioridad asignada": h.nivel,
             "Motivo de la actualización": h.motivo,
