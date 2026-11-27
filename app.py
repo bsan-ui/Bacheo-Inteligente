@@ -1,6 +1,8 @@
 import altair as alt
 import streamlit as st
 import pandas as pd
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from database.db import init_db
 from services.seed import seed_demo
 from services.reportes import (
@@ -41,8 +43,6 @@ from analytics.prediccion import (
 )
 from models.lista_enlazada import ListaEnlazadaRuta
 from security.auth import verificar_admin
-from datetime import datetime
-from zoneinfo import ZoneInfo
 
 COLORES_PRIORIDAD_TEXTO = {
     "Emergencia": "color: #C62828; font-weight: 600;",
@@ -656,12 +656,13 @@ else:
                         "restitución de base hidráulica o atención por escorrentía/drenaje."
                     )
 
-                if st.button("Guardar inspección y recalcular prioridad", type="primary", key=f"btn_med_{folio_revision}"):
-                    nota_revision = st.text_area(
+                nota_revision = st.text_area(
                         "Observaciones técnicas de la inspección (obligatorio)",
                         placeholder="Ej. Medición con flexómetro tras lluvias; revisar drenaje o base.",
                         key=f"nota_med_{folio_revision}",
                     )
+                
+                if st.button("Guardar inspección y recalcular prioridad", type="primary", key=f"btn_med_{folio_revision}"):
                     if not nota_revision.strip():
                         st.error("Escribe una observación breve sobre la inspección realizada.")
                     else:
